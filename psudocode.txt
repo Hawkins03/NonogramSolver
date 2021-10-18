@@ -1,0 +1,47 @@
+Pull in length of nonogram
+Pull in rows
+Pull in columns
+
+while (true):
+    Run probabilities on rows
+    Run probabilities on columns
+
+HOW: DONE!
+ - note for each block, breaks if the position is ever = 1 (position != index btw)
+    Find impossible blocks rows
+    Find impossible blocks columns
+pull prev values (1.0 > 1.0, 0.00 > -1, other > 0.00)
+    Find blocks rows
+    Find blocks columns
+pull prev values (1.0 > 1.0, 0.00 > -1, other > 0.00)
+
+how to find blocks:
+maxPos = length - sumOfALlBlocksAfter + currBlockLen
+minPos = SumOFAllBlocksBefore + 1
+for loop
+    if current position is -1 and next position is 1 or,
+    if current position is 1 and next position is -1
+        generate block array (ie what the block would look like on an array)
+        for loop using block length
+            if  abs(block array - array) = 2 
+            (ie if there should be a 1 and there's a -1)
+            or, if there should be a -a and there's a 1)
+                break the loop
+        if that succeded,
+            Remove the block from the row / column list
+            replace all positions in that space with the block array
+            break the loop
+        break the loop
+
+
+Array 1   0   -1
+Block
+1     0   1    2
+-1   -2  -1    0
+
+    Find full rows
+    Find full columns
+if sum of all blocks and sum of the spots are equal, fill in all non 1 spots with -1
+
+
+(max of 2*length itterations)
