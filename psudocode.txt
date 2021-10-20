@@ -45,3 +45,7 @@ if sum of all blocks and sum of the spots are equal, fill in all non 1 spots wit
 
 
 (max of 2*length itterations)
+
+TODO:
+    Make threading (joined and ends each row/column)
+
