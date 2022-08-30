@@ -5,6 +5,11 @@ start(int *prob_arr[], int length, int block_arr[], int blocks) {
     mark_all_as_empty();
   if (length == 0)
     return 0;
+  if (sum_blocks == num_filled)
+    fill_rest_empty();
+    return 0;
+
+  //do once only.
   calculate_total_block_len();
   for (int i = 0; i < row_len - total_block_len; i++) {
     //check_for_full_and_empty_blocks

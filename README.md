@@ -1,6 +1,5 @@
 # NonogramSolver
 A package built to solve nonograms
-
 How this works:
   This works using the idea that the basic probability of a space being filled (just using the blocks given) is equal to total_block_len * (dist_to_empty_square) / len
 
@@ -44,3 +43,13 @@ LATER RUNS:
       number of possibilities = dist to closest empty space + 1. subtract that from the block length and fill in that many blocks in the opposite direction.
   c. if an empty space is found that the block can't enter within the region that encloses the block's space between where it started and where it has to be, fill in said space.
   d. if that block is found to be full, add end caps, and end calcualtions for that block.
+
+Most effecient way to fill blocks:
+
+i 0 -> blocks[0]
+| empty -> move on
+| full -> constrain length
+| other -> add 1
+| i > length - total_length -> make full and constrain
+j blocks[0] -> len
+| empty -> constrain
