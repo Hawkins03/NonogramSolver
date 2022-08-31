@@ -1,51 +1,7 @@
 #include "solver.h"
 
-void check_status(int *prob_arr[], int length, int block_arr[], int blocks) {
-  int total_block_len = -1;
-  for (int i = 0; i < blocks; i++)
-    total_block_len += block_arr[i] + 1;
-
-  int total_full = 0;
-  int total_empty = 0;
-  for (int i = 0; i < length; i++) {
-    if (prob_arr[i] == (int *) EMPTY)
-      total_empty++;
-    else if (prob_arr[i] == (int *) FULL)
-      total_full++;
-    else {
-      if (*prob_arr[i] == 0) {
-        *(prob_arr[i]) = EMPTY;
-        prob_arr[i] = (int *) EMPTY;
-        total_empty++;
-      }
-      else if (*prob_arr[i] <= length - total_block_len) {
-        *prob_arr[i] = FULL;
-        prob_arr[i] = (int *)FULL;
-        total_full++;
-      }
-    }
-  }
-  //sum_blocks if total_empty == length - sum_blocks  -> rest = full
-  //if total_full == sum_blocks -> rest = empty
-}
-
-/*
-//check if 1 - # empty = sum(block_arr)
-int check_full(int *prob_arr[], int length, int block_arr[], int blocks) {
-  int num_empty = 0;
-  for (int i = 0; i < length; i++)
-    if (prob_arr[i] > 0) {
-      if ((*prob_arr[i]) >= length - total_block_len) {
-        mark_full(&prob_arr[i]);
-      }
-    }
-    else if ((prob_arr[i] == (int *) EMPTY) && (prob_arr[i] != (int *) FULL))
-      num_empty++;
-
-  return 1;
-}*/
-
 int solve(int *prob_arr[], int length, int block_arr[], int blocks) {
+  //base cases
   if (blocks == 0) {
     for (int i = 0; i < length; i++)
       mark_empty(&prob_arr[i]);
@@ -75,26 +31,41 @@ int solve(int *prob_arr[], int length, int block_arr[], int blocks) {
         return 1;
       }
     }
-  }
 
-  // 6 || | | | |START HERE||END HERE| | | | ||
-  // Filling in the parts that have to be full
-  for (int i = length - total_block_len; i < total_block_len; i++) {
-    if ((prob_arr[i] == (int *) EMPTY) && (i < block_arr[0])) {
-      for (int j = 0; j < i; j++){
-        if (prob_arr[i] > 0) {
-          *prob_arr[i] = EMPTY;
-          prob_arr[i] = (int *) EMPTY;
+    // 6 || | | | |START HERE||END HERE| | | | ||
+    // Filling in the parts that have to be full
+    for (int i = length - total_block_len; i < total_block_len; i++) {
+      if ((prob_arr[i] == (int *) EMPTY) && (i < block_arr[0])) {
+        for (int j = 0; j < i; j++){
+          if (prob_arr[i] > 0) {
+            *prob_arr[i] = EMPTY;
+            prob_arr[i] = (int *) EMPTY;
+          }
         }
       }
-    }
-    if (prob_arr[i] > 0) {
-      *prob_arr[i] = FULL;
-      prob_arr[i] = (int *) FULL;
+      if (prob_arr[i] > 0) {
+        *prob_arr[i] = FULL;
+        prob_arr[i] = (int *) FULL;
+      }
     }
   }
 
-  // 6 || | | | | ||START HERE| | | |END HERE||
+  else {
+    // 3||START HERE| |END HERE| | || | ||
+    for (int i = 0; i < block_arr[0]; i++) {
+      if (prob_arr[i] == (int *) FULL) {
+        solve(prob_arr, block_arr[0] + i, block_arr, 1);
+        solve(prob_arr + block_arr[0] + 1, length - block_arr[0] - 1,
+              block_arr + 1, length - 1);
+        return 1;
+      }
+      if (prob_arr[i] == (int *) EMPTY) {
+        solve(prob_arr + i + 1, length - i - 1, block_arr, blocks);
+      }
+    }
+  }
+
+  // 6 || | | | | || |START HERE| | |END HERE||
   // Fnding constraints to the length
   for (int i = total_block_len; i < length; i++) {
     if (prob_arr[i] == (int *) EMPTY) {
