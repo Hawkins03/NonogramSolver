@@ -21,7 +21,7 @@ So, we have 2 verifiable rules for nonogram that we can use to have a computer s
 2. If the sum of all spaces in a row / column equals the sum of all blocks in that row / column, then all other spaces in that range must be empty
 3. No two blocks can touch, so each must have an empty space at the end.
 
-The flowchart for the function is as follows: ![](solver_flowchart.png)
+The flowchart for the function is as follows: ![](Solver-flowchart.png)
 
 
 Important things to look for:
