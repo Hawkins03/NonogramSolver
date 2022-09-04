@@ -15,6 +15,17 @@
  * In addition, it takes in an array of blocks (the little numbers to the side/
  * top of the nonogram)
  * also takes in the length of that array (again to make it easier to constrain)
+ * quick flowchart:
+ * Start:
+ *  if length <= 0 || blocks <= 0 -> end
+ *  Find total block len
+
+ *  is the current block long enough to fill spaces?
+ *   check before the spaces to be filled to see if we can constrain the length
+ *   fill the spaces
+ *
+ *  if not, just check for constraints on the length
+ * end.
  */
 int solve(int *prob_arr[], int length, int block_arr[], int blocks) {
   int num_found = 0;
@@ -53,7 +64,7 @@ int solve(int *prob_arr[], int length, int block_arr[], int blocks) {
 
     // 6 || | | | |START HERE||END HERE| | | | ||
     // Filling in the parts that have to be full
-    for (int i = length - total_block_len; i < total_block_len; i++) {
+    for (int i = length - total_block_len; i < block_arr[0]; i++) {
       if ((*prob_arr[i] == EMPTY) && (i < block_arr[0])) {
         for (int j = 0; j < i; j++) {
           *prob_arr[i] = EMPTY;
