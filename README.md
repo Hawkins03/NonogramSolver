@@ -62,5 +62,5 @@ Currently, I think this is about the most effecient I can get this program,
 algorithm wise, now I'm just working on optimizing storage requirements.
 
 
-In terms of a sense of how long this takes in total, here's a full flowchart of the program:
+In terms of a sense of how long this takes in total, here's a full flowchart of the program: (note, this is mainly for time calculation purposes)
 ![](Solver-flowchart.png)
