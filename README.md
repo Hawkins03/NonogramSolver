@@ -1,12 +1,12 @@
 # NonogramSolver
 A package built to solve nonograms
 
-##What is a nonogram?
+## What is a nonogram?
 A nonogram is a japenese puzzle, where you are given the rough layout of how
 many squares are filled linearly in each column and row. Your job is to figure
 out based on the orginization of these "blocks" the exact pattern of the puzzle.
 
-##How do I store data (implimentation in progress)
+## How do I store data (implimentation in progress)
 
 This program stores data in a 2d array of structures.
 
@@ -15,7 +15,7 @@ known to be occupied, and the second is if the structure is known to be empty.
 In absence of both, the structure is undecided. (It is not possible for a
 structure to be both occupied and empty).
 
-##General words I use that I should explain:
+## General words I use that I should explain:
 - Block: the number written to the left of the row / above the column
 - space / index: the box coresponding to wherever on the array / prob array I'm refrencing
 - Block array: Pretty much a section of the row / column array passed into thesolve function
@@ -24,7 +24,7 @@ structure to be both occupied and empty).
 - length: the length of the probability array
 - total block length: Because having one block touch another block would mean we just have 1 block, this is just the sum of (all blocks + 1) -1. This gives the actual length of the blocks for that row / column. If this is longer than half the length, there has to be a full space somewhere.
 
-##How do I solve this puzzle?
+## How do I solve this puzzle?
 To solve this puzzle, I start at the main function which first calls the solve
 function on all the rows, and then all the columns. After that is complete, it
 counts all of the spaces solved, and compares that to the sum of the previous
@@ -32,7 +32,7 @@ itteration. If it hasn't solved more spaces since then, we confidently know that
 there isn't any more progress to be made, and can confidently say that the
 puzzle is solved to the best of the algorithm's ability.
 
-###How does the solving function work
+### How does the solving function work
 The sovling function is a recursive function that tries to constrict the
 possible number of spaces within the current row/column, and based off of that
 it then marks spaces either occupied or empty. Here is a short bit of psudocode
