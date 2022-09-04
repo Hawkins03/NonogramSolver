@@ -1,55 +1,66 @@
 # NonogramSolver
 A package built to solve nonograms
-How this works:
-  This works using the idea that the basic probability of a space being filled (just using the blocks given) is equal to total_block_len * (dist_to_empty_square) / len
 
-the basic board is constructed by barriers surrounding the actual length (I.e.):
+##What is a nonogram?
+A nonogram is a japenese puzzle, where you are given the rough layout of how
+many squares are filled linearly in each column and row. Your job is to figure
+out based on the orginization of these "blocks" the exact pattern of the puzzle.
 
-XXXXXXX
-X00000X
-X00000X
-X00000X
-X00000X
-X00000X
-XXXXXXX
-(the reason will be given later)
+##How do I store data (implimentation in progress)
 
-Inside the array, these are actually given by -1 (EMPTY), and Filled in squares are given by -2 (FILLED)
+This program stores data in a 2d array of structures.
 
-So, we have 2 verifiable rules for nonogram that we can use to have a computer solve a nonogram.
-1. The probability that a square is filled is given by block_len(dist_to_empty_square) / len
-2. If the sum of all spaces in a row / column equals the sum of all blocks in that row / column, then all other spaces in that range must be empty
-3. No two blocks can touch, so each must have an empty space at the end.
+These structures each contain 2 booleans, the first is if the structure is
+known to be occupied, and the second is if the structure is known to be empty.
+In absence of both, the structure is undecided. (It is not possible for a
+structure to be both occupied and empty).
+
+##General words I use that I should explain:
+- Block: the number written to the left of the row / above the column
+- space / index: the box coresponding to wherever on the array / prob array I'm refrencing
+- Block array: Pretty much a section of the row / column array passed into thesolve function
+- Probability array: a copy of the main array that contains pointers to the indexes.
+- blocks: the number of blocks in the array
+- length: the length of the probability array
+- total block length: Because having one block touch another block would mean we just have 1 block, this is just the sum of (all blocks + 1) -1. This gives the actual length of the blocks for that row / column. If this is longer than half the length, there has to be a full space somewhere.
+
+##How do I solve this puzzle?
+To solve this puzzle, I start at the main function which first calls the solve
+function on all the rows, and then all the columns. After that is complete, it
+counts all of the spaces solved, and compares that to the sum of the previous
+itteration. If it hasn't solved more spaces since then, we confidently know that
+there isn't any more progress to be made, and can confidently say that the
+puzzle is solved to the best of the algorithm's ability.
+
+###How does the solving function work
+The sovling function is a recursive function that tries to constrict the
+possible number of spaces within the current row/column, and based off of that
+it then marks spaces either occupied or empty. Here is a short bit of psudocode
+to show how the function works:
+
+`
+function solver (probability_array, length, block_array, num_blocks) {
+
+if (blocks == 0)
+  mark rest empty and return the number answered.
+if (length == 0)
+  no more stuff to change: return 0;
+
+if (block_arr[0] > length - total_block_len)
+  check for empty / full spaces that would constrian the length.
+  fill in the center blocks up to the end of block_arr[i].
+endif
+else
+  check for empty/full spaces that would constrain the length.
+endelse
+  check the end for empty/ occupied spaces that would constrain the lenght.
+recurse to the next block in the array, and reduce the length to reflect that.
+return the number of spaces we have calculated.
+`
+
+Currently, I think this is about the most effecient I can get this program,
+algorithm wise, now I'm just working on optimizing storage requirements.
 
 
-Important things to look for:
- 1. mark spaces empty when they can't be reached
- 2. Mark end caps
- 3. if empty + sum_blocks == len fill in all remaining spaces as full.
-    if sum_full_spaces == sum_blocks fill in all remaining spaces as empty.
- 4. if a block is known to be in two spaces that aren't next to each other, all middle spaces must be filled.
-
-Using those rules, we can construct a loop for a computer to follow to solve a nonogram:
-
-FIRST RUN:
-1. Check for full rows (total_block_len = sum_blocks + num_blocks - 1)
-2. General possibility run (don't devide by len to conserve computing power)
-
-LATER RUNS:
-1. For each block:
-  a. Itteritivly check that for a spot it can fit in. Add 1 to each of their numerators.
-     Also Set their denominators to the current length.
-  b. if there is a filled space (without end caps and isn't the proper length), start a special calculation:
-      number of possibilities = dist to closest empty space + 1. subtract that from the block length and fill in that many blocks in the opposite direction.
-  c. if an empty space is found that the block can't enter within the region that encloses the block's space between where it started and where it has to be, fill in said space.
-  d. if that block is found to be full, add end caps, and end calcualtions for that block.
-
-Most effecient way to fill blocks:
-
-i 0 -> blocks[0]
-| empty -> move on
-| full -> constrain length
-| other -> add 1
-| i > length - total_length -> make full and constrain
-j blocks[0] -> len
-| empty -> constrain
+In terms of a sense of how long this takes in total, here's a full flowchart of the program:
+!image[asdf.png]
