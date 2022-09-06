@@ -122,10 +122,27 @@ int solve(int *prob_arr[], int length, int block_arr[], int blocks) {
           *prob_arr[j] = EMPTY;
           num_found++;
         }
+        num_found += solve(prob_arr, i, block_arr, 1);
         return num_found;
       }
 
       num_found += solve(prob_arr, i - 1, block_arr, blocks);
+    }
+    if (*prob_arr[i] == FULL) {
+      int offset = length - block_arr[0] - i;
+      if (offset >= 0) {
+        num_found += solve(prob_arr + offset, length - offset,
+                           block_arr, blocks);
+
+        if (blocks == 1) {
+          for (int j = 0; j < offset; j++) {
+            *prob_arr[j] = EMPTY;
+            num_found++;
+          }
+        }
+      }
+      else {
+        return -1; //WEE WOO WEE WOO, PROBLEM PROBLEM.
     }
   }
 
