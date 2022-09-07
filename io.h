@@ -1,11 +1,11 @@
-#include <stdio.h>
-
 #ifndef IO_H
 #define IO_H
 
+#include "solver.h"
+#include <stdio.h>
 
-int get_block_data(char *fileName, char *output);
-int get_row_and_column_data(char *file_name, int *rows[30][14],
-                            int *columns[30][14]);
+int get_block_data(char *file_name,
+                   unsigned short *rows[MAX_SIZE][MAX_SIZE / 2],
+                   unsigned short *columns[MAX_SIZE][MAX_SIZE / 2]);
 
 #endif //IO_H
