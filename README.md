@@ -15,6 +15,25 @@ known to be occupied, and the second is if the structure is known to be empty.
 In absence of both, the structure is undecided. (It is not possible for a
 structure to be both occupied and empty).
 
+## How do I input data?
+Later I plan to make an actual interface for the project, but for the intrest
+of time, the project will be run using the terminal and will accept data from
+a file in the form of the regex string `(((\d+) ?)+\n?)+\n(((\d+) ?)+\n?)+`.
+This would look like
+
+`6 3
+2
+14
+
+12
+14
+1`
+
+The different rows signify the columns, and the new paragraph of rows, is the
+column headers. Spaces and enters are optional at the end as well. In terms of
+what capture groups signify what, group 1 is for the rows, #2 is per row, and group number 3 is per "block" being displayed.
+Same goes for 4-6, but for column (rows are down the left, columns are accross the top.)
+
 ## General words I use that I should explain:
 - Block: the number written to the left of the row / above the column
 - space / index: the box coresponding to wherever on the array / prob array I'm refrencing
