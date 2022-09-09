@@ -18,21 +18,24 @@ structure to be both occupied and empty).
 ## How do I input data?
 Later I plan to make an actual interface for the project, but for the intrest
 of time, the project will be run using the terminal and will accept data from
-a file in the form of the regex string `(((\d+) ?)+\n?)+\n(((\d+) ?)+\n?)+`.
-This would look like
+a file. The format will be the number of columns, then the row blocks, a space
+and then the number of rows and the row blocks. Note the height and width must
+be smaller than the max size (currently 30). Then each line (max 31 chars) will
+be read into a line and broken down using regex.
 
-`6 3
-2
-14
+For example:
 
-12
-14
-1`
+`3
+ 3
+ 1 1
+ 3
 
-The different rows signify the columns, and the new paragraph of rows, is the
-column headers. Spaces and enters are optional at the end as well. In terms of
-what capture groups signify what, group 1 is for the rows, #2 is per row, and group number 3 is per "block" being displayed.
-Same goes for 4-6, but for column (rows are down the left, columns are accross the top.)
+ 3
+ 3
+ 1 1
+ 3
+`
+(this makes a block with a hole in the middle)
 
 ## General words I use that I should explain:
 - Block: the number written to the left of the row / above the column
