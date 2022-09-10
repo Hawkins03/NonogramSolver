@@ -13,7 +13,7 @@ These structures each contain 2 booleans, the first is if the structure is known
 ## How do I input data?
 Later I plan to make an actual interface for the project, but for the intrest of time, the project will be run using the terminal and will accept data from a file. The format will be the width then height for the first line, then for every line after, the number of blocks in that row/column, and then the blocks in that row.
 For example:
-
+`
 3 3    
 1 3   
 2 1 1   
@@ -23,6 +23,7 @@ For example:
 1 3   
 2 1 1   
 1 3   
+`
 (this makes a block with a hole in the middle)
 
 ## General words I use that I should explain:
