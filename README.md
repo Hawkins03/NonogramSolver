@@ -15,14 +15,14 @@ Later I plan to make an actual interface for the project, but for the intrest of
 For example:
 
 3 3 
- 1 3
- 2 1 1
- 1 3
+1 3
+2 1 1
+1 3
 
- 1 3
- 1 3
- 2 1 1
- 1 3
+1 3
+1 3
+2 1 1
+1 3
 (this makes a block with a hole in the middle)
 
 ## General words I use that I should explain:
