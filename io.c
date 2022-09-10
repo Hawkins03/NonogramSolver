@@ -3,64 +3,90 @@
 /*
  * returns 1 if it works, returns an error code if it fails.
  *
- * output acts as a punch card, make it, then plug it into the function to get
- * your result. (I don't really want to mess with returing a pointer to
- * something that no longer exists after the function ends). I used shorts
- * instead of ints because I didn't need int lengths, and 2 bytes is honestly a
- * bit much, I could deff get away with only 1, but just for size reasons I'm
- * leaving it at a short for now. (I may edit this later)
- *
  * Steps required:
  *  1. open the file
- *  2. read the things inside the file
- *   3. Conveniently find a way to use the regex grouping to auto seperate the
- *   info where it needs to go. (group 1 = rows, 4 = columns, 2 & 5 are
- *   individual rows and columns, 3 & 6 are numbers)
+ *  2. read the number of rows
+ *   3. read in that many lines into a buffer each (and then use regex to
+ *        convert each buffer into a list of integers)
+ *  4. read in the number of columns.
+ *   5. read in that many lines into a buffer each (and then use regex to
+ *        convert each buffer into a list of integers)
  *
  * regex stuff to be added later:
- *  regex_t regex;
- *  char *filter = "(((\\d+) ?){0,15}\n?){0,30}\n(((\\d+) ?){0,15}\n?){0,30}";
-
+ * char *filter = "\\(\\d+\\)"; // per line
+ * 1860
+ * returns a list containing pointers to both arrays
  */
-int get_block_data(char *file_name,
-                   unsigned short int *rows[MAX_SIZE][MAX_SIZE / 2],
-                   unsigned short int *columns[MAX_SIZE][MAX_SIZE / 2]) {
-  if ((!file_name) || (!rows) || (!columns))
-    return NULL_INPUT;
-  int status;
-  char buffer[31] = { 0 };
+int ***get_block_data(char *file_name) {
+
+  if ((!file_name))
+    return NULL;
+
   FILE *in_file;
 
-  /* get in the file data 1860 (30 * 31 * 2 + 1 - 1) buffer size, or do it
-   * using for loops */
-
+  //initalizing FILE
   in_file = fopen(file_name, "r");
+
   if (!in_file)
-    return FILE_ERROR;
+    return NULL;
 
-  // reading in rows
-  for (int i = 0; i < 30; i++) {
-    int row_sum = -1;
-    status = fscanf(in_file, "%[^\n]", buffer);
-    // parse through it using regex because scanf ignores whitespace (which
-    // means it will overflow the buffer. Solution: Use regex to parse through
-    // it. This way it's also more space effecient, 31 bytes instead of 1860 at
-    // a time.)
+  int status;
+  unsigned short int buffer;
+  unsigned short int height;
+  unsigned short int width;
 
-    if ((status < 1))
-      return FILE_ERROR;
 
-    // don't read in all the stupid enters (" " = all whitespace as does \n)
-    if (status == 0)
-      break;
+  //getting dimensions of nonogram
+  status = fscanf(in_file, "%hu %hu\n", &height, &width);
 
-    if (row_sum > MAX_SIZE)
-      return INPUT_ERROR;
-    status = fscanf(in_file, "\n");
+  if ((status < 2) || (height > MAX_SIZE) || (width > MAX_SIZE)) {
+    fclose(in_file);
+    return NULL;
   }
 
-  //regex: ";
+  // mallocing row blocks ()
+  unsigned short int ***blocks = malloc(height * width *
+                                           sizeof(short));
+  if (!blocks) {
+    fclose(in_file);
+    return NULL;
+  }
 
-  return 1;
+  // reading in rows
+  for (int i = 0; i < 2; i++) {
+    for (int j = 0; j < height; j++) {
+      int row_sum = -1;
+      int num_blocks = 0;
+
+      // finding the number of blocks in the row
+      status = fscanf(in_file, "%d ", &num_blocks);
+      if (status < 1) {
+        fclose(in_file);
+        free(blocks);
+        return NULL;
+      }
+
+      // reading in blocks
+      for (int k = 0; k < num_blocks; k++) {
+        status = fscanf(in_file, "%hu ", &buffer);
+        if ((status < 1)) {
+          fclose(in_file);
+          free(blocks);
+          return NULL;
+        }
+
+        // saving value
+        if (row_sum + buffer + 1 <= width) {
+          blocks[i][j][k] = buffer;
+          row_sum += buffer + 1;
+        }
+      }
+
+      fscanf(in_file, "\n");
+    }
+    fscanf(in_file, "\n");
+  }
+
+  return blocks;
 }
 
