@@ -32,7 +32,7 @@ For example:
 - Probability array: a copy of the main array that contains pointers to the indexes.
 - blocks: the number of blocks in the array
 - length: the length of the probability array
-- total block length: Because having one block touch another block would mean we just have 1 block, this is just the sum of `(all blocks + 1) 1` This gives the actual length of the blocks for that row / column. If this is longer than half the length, there has to be a full space somewhere.
+- total block length: Because having one block touch another block would mean we just have 1 block, this is just the sum of all blocks + the number of blocks - 1 This gives the actual length of the blocks for that row / column. If this is longer than half the length, there has to be a full space somewhere.
 
 ## How do I solve this puzzle?
 To solve this puzzle, I start at the main function which first calls the solve function on all the rows, and then all the columns. After that is complete, it counts all of the spaces solved, and compares that to the sum of the previous itteration. If it hasn't solved more spaces since then, we confidently know that there isn't any more progress to be made, and can confidently say that the puzzle is solved to the best of the algorithm's ability.
