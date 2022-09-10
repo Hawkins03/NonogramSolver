@@ -2,7 +2,7 @@
 A package built to solve nonograms
 
 ## What is a nonogram?
-![Explination of rules](https://www.youtube.com/watch?v=zisu0Qf4TAI)
+[Explination of rules](https://www.youtube.com/watch?v=zisu0Qf4TAI)
 A nonogram is a japenese puzzle, where you are given the rough layout of how many squares are filled linearly in each column and row. Your job is to figure out based on the orginization of these "blocks" the exact pattern of the puzzle.
 
 ## How do I store data (implimentation in progress)
