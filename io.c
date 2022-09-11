@@ -17,7 +17,7 @@
  * 1860
  * returns a list containing pointers to both arrays
  */
-int ***get_block_data(char *file_name) {
+unsigned short int ***get_block_data(char *file_name) {
 
   if ((!file_name))
     return NULL;
@@ -40,17 +40,23 @@ int ***get_block_data(char *file_name) {
   status = fscanf(in_file, "%hu %hu\n", &height, &width);
 
   if ((status < 2) || (height > MAX_SIZE) || (width > MAX_SIZE)) {
+    printf("failed to read in width and height\n");
     fclose(in_file);
     return NULL;
   }
 
+  printf("width: %d, height: %d\n", width, height);
+
   // mallocing row blocks ()
-  unsigned short int ***blocks = malloc(height * width *
-                                           sizeof(short));
+  unsigned short int (*blocks)[width][height] = malloc(sizeof(short[2][width]
+                                                                   [height]));
   if (!blocks) {
+    printf("malloc failed");
     fclose(in_file);
     return NULL;
   }
+
+  printf("malloc good. (%lu)\n", sizeof(blocks));
 
   // reading in rows
   for (int i = 0; i < 2; i++) {
@@ -58,6 +64,7 @@ int ***get_block_data(char *file_name) {
       int row_sum = -1;
       int num_blocks = 0;
 
+      printf("1.\n");
       // finding the number of blocks in the row
       status = fscanf(in_file, "%d ", &num_blocks);
       if (status < 1) {
@@ -65,6 +72,10 @@ int ***get_block_data(char *file_name) {
         free(blocks);
         return NULL;
       }
+
+      printf("2.\n");
+      printf("number: %d, ", num_blocks);
+      fflush(NULL);
 
       // reading in blocks
       for (int k = 0; k < num_blocks; k++) {
@@ -75,18 +86,39 @@ int ***get_block_data(char *file_name) {
           return NULL;
         }
 
+        printf("3. ");
+        fflush(NULL);
+
+        printf("%hu", buffer);
+        fflush(NULL);
         // saving value
         if (row_sum + buffer + 1 <= width) {
+          printf("%hu (%d, %d, %d)", buffer, i, j, k);
+          fflush(NULL);
           blocks[i][j][k] = buffer;
           row_sum += buffer + 1;
         }
       }
 
       fscanf(in_file, "\n");
+      printf("\n");
     }
     fscanf(in_file, "\n");
+    printf("\n");
   }
 
   return blocks;
 }
 
+int main(int argc, char *argv[]) {
+  unsigned short int ***blocks = get_block_data("blocks.txt");
+  if (!blocks)
+    return -1;
+
+  printf("%lu %lu", sizeof(blocks[0][0]) / sizeof(short int),
+         sizeof(blocks[1][0]) / sizeof(short int));
+
+
+  free(blocks);
+
+}
