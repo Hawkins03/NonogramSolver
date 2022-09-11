@@ -1,0 +1,13 @@
+CC = gcc
+CFLAGS = -03 -Wall -Werror
+DEPS = io.h solver.h
+
+%.o: %.c $(DEPS)
+	$(CC) -c -o $@ $< $(CFLAGS)
+
+solver: solver.o io.o
+	$(CC) -o NonogramSolver solver.o io.o $(CFLAGS)
+
+.phony: clean
+clean:
+	rm *.o NonogramSolver

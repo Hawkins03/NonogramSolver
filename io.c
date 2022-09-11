@@ -1,6 +1,20 @@
 #include "io.h"
 
 /*
+ * called by get_block_data. It
+ *
+ *
+ */
+static unsigned short int WIDTH = 0;
+static unsigned short int HEIGHT = 0;
+
+static unsigned short int[WIDTH][HEIGHT] fetch_from_file(FILE *in_file,
+                                              unsigned short int blocks[][]) {
+  
+  return blocks;
+}
+
+/*
  * returns 1 if it works, returns an error code if it fails.
  *
  * Steps required:
@@ -38,7 +52,7 @@ unsigned short int ***get_block_data(char *file_name) {
 
   //getting dimensions of nonogram
   status = fscanf(in_file, "%hu %hu\n", &height, &width);
-
+i
   if ((status < 2) || (height > MAX_SIZE) || (width > MAX_SIZE)) {
     printf("failed to read in width and height\n");
     fclose(in_file);
@@ -122,3 +136,5 @@ int main(int argc, char *argv[]) {
   free(blocks);
 
 }
+
+
