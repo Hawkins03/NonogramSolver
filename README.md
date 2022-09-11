@@ -1,6 +1,10 @@
 # NonogramSolver
 A package built to solve nonograms
 
+## How do I initalize things?
+`make clean` - remove extra files other than .c and .h files (and some others)   
+`make solver` - create NonogramSolver executable   
+
 ## What is a nonogram?
 A nonogram is a japenese puzzle, where you are given the rough layout of how many squares are filled linearly in each column and row. Your job is to figure out based on the orginization of these "blocks" the exact pattern of the puzzle.   
 [Explination of rules](https://www.youtube.com/watch?v=zisu0Qf4TAI)   
