@@ -1,37 +1,99 @@
 #include "io.h"
 
-/*
- * called by get_block_data. It
- *
- *
- */
 static unsigned short int WIDTH = 0;
 static unsigned short int HEIGHT = 0;
 
-static unsigned short int[WIDTH][HEIGHT] fetch_from_file(FILE *in_file,
-                                              unsigned short int blocks[][]) {
-  
-  return blocks;
+/*
+ * called by get_block_data. It fetches the data from the file.
+ *
+ *
+ */
+static int fetch_from_file(FILE *in_file,
+                           clue_storage_t *blocks, bool is_row) {
+
+  if ((!in_file) || (!blocks))
+    return -1;
+
+  if ((!(blocks->rows)) || (!blocks->columns))
+    return -1;
+
+  int status;
+  unsigned short int buffer;
+  clue_arr block_arr[WIDTH][HEIGHT] = ((is_row) ? (blocks->rows):(blocks->columns));
+
+  printf("malloc good. (%lu)\n", sizeof(*blocks));
+
+  // reading in rows
+  for (int j = 0; j < HEIGHT; j++) {
+    int row_sum = -1;
+    int num_blocks = 0;
+
+    printf("1.\n");
+    // finding the number of blocks in the row
+    status = fscanf(in_file, "%d ", &num_blocks);
+    if (status < 1) {
+      fclose(in_file);
+      free(blocks);
+      return FILE_ERROR;
+    }
+
+    printf("2.\n");
+    printf("number: %d, ", num_blocks);
+    fflush(NULL);
+
+    // reading in blocks
+    for (int k = 0; k < num_blocks; k++) {
+      status = fscanf(in_file, "%hu ", &buffer);
+      if ((status < 1)) {
+        fclose(in_file);
+        return FILE_ERROR;
+      }
+
+      printf("3. ");
+      fflush(NULL);
+
+      printf("%hu", buffer);
+      fflush(NULL);
+      // saving value
+     if (row_sum + buffer + 1 <= WIDTH) {
+        printf("%hu (%d, %d)", buffer, j, k);
+        fflush(NULL);
+        *(block_arr[j][k]) = buffer;
+        row_sum += buffer + 1;
+      }
+    }
+
+    status = fscanf(in_file, "\n");
+    printf("\n");
+  }
+  status = fscanf(in_file, "\n");
+  printf("\n");
+
+  return 1;
 }
 
 /*
  * returns 1 if it works, returns an error code if it fails.
  *
- * Steps required:
- *  1. open the file
- *  2. read the number of rows
- *   3. read in that many lines into a buffer each (and then use regex to
- *        convert each buffer into a list of integers)
- *  4. read in the number of columns.
- *   5. read in that many lines into a buffer each (and then use regex to
- *        convert each buffer into a list of integers)
+ * Reads in a set of blocks for a nonogram from a file. The input sequence is as
+ * follows: (brackets just mean it's in place of a number, ... means repeat the
+ * pattern as nessesary)
  *
- * regex stuff to be added later:
- * char *filter = "\\(\\d+\\)"; // per line
- * 1860
- * returns a list containing pointers to both arrays
+ * [width] [height]
+ * [row 1 # of blocks] [block 1 length] [block 2 length]
+ * [row 2 # of blocks] [block 1 length] ...
+ * ...
+ * [row n # of blocks] ...
+ *
+ * [column 1 # of blocks] [block 1 length]...
+ * ...
+ * [column n # of blocks]
+ *
+ * note, the total length (and spaces between each block) can't be longer than
+ * the length of that row / length.
+ *
  */
-unsigned short int ***get_block_data(char *file_name) {
+clue_storage_t *get_block_data(char *file_name) {
 
   if ((!file_name))
     return NULL;
@@ -45,96 +107,48 @@ unsigned short int ***get_block_data(char *file_name) {
     return NULL;
 
   int status;
-  unsigned short int buffer;
-  unsigned short int height;
-  unsigned short int width;
 
 
   //getting dimensions of nonogram
-  status = fscanf(in_file, "%hu %hu\n", &height, &width);
-i
-  if ((status < 2) || (height > MAX_SIZE) || (width > MAX_SIZE)) {
+  status = fscanf(in_file, "%hu %hu\n", &HEIGHT, &WIDTH);
+
+  if ((status < 2) || (HEIGHT > MAX_SIZE) || (WIDTH > MAX_SIZE)) {
     printf("failed to read in width and height\n");
     fclose(in_file);
     return NULL;
   }
 
-  printf("width: %d, height: %d\n", width, height);
+  printf("width: %d, height: %d\n", WIDTH, HEIGHT);
+
+
 
   // mallocing row blocks ()
-  unsigned short int (*blocks)[width][height] = malloc(sizeof(short[2][width]
-                                                                   [height]));
-  if (!blocks) {
-    printf("malloc failed");
+  clue_storage_t *blocks = malloc(sizeof(clue_storage_t));
+
+
+
+  status = fetch_from_file(in_file, blocks, true);
+  if (status < 1) {
     fclose(in_file);
     return NULL;
   }
 
-  printf("malloc good. (%lu)\n", sizeof(blocks));
 
-  // reading in rows
-  for (int i = 0; i < 2; i++) {
-    for (int j = 0; j < height; j++) {
-      int row_sum = -1;
-      int num_blocks = 0;
 
-      printf("1.\n");
-      // finding the number of blocks in the row
-      status = fscanf(in_file, "%d ", &num_blocks);
-      if (status < 1) {
-        fclose(in_file);
-        free(blocks);
-        return NULL;
-      }
+  /*
 
-      printf("2.\n");
-      printf("number: %d, ", num_blocks);
-      fflush(NULL);
-
-      // reading in blocks
-      for (int k = 0; k < num_blocks; k++) {
-        status = fscanf(in_file, "%hu ", &buffer);
-        if ((status < 1)) {
-          fclose(in_file);
-          free(blocks);
-          return NULL;
-        }
-
-        printf("3. ");
-        fflush(NULL);
-
-        printf("%hu", buffer);
-        fflush(NULL);
-        // saving value
-        if (row_sum + buffer + 1 <= width) {
-          printf("%hu (%d, %d, %d)", buffer, i, j, k);
-          fflush(NULL);
-          blocks[i][j][k] = buffer;
-          row_sum += buffer + 1;
-        }
-      }
-
-      fscanf(in_file, "\n");
-      printf("\n");
-    }
-    fscanf(in_file, "\n");
-    printf("\n");
-  }
+  `  */
 
   return blocks;
 }
 
 int main(int argc, char *argv[]) {
-  unsigned short int ***blocks = get_block_data("blocks.txt");
+  clue_storage_t *blocks = get_block_data("blocks.txt");
   if (!blocks)
     return -1;
 
-  printf("%lu %lu", sizeof(blocks[0][0]) / sizeof(short int),
-         sizeof(blocks[1][0]) / sizeof(short int));
-
-
+  printf("block fetch good: %lu", sizeof(*blocks));
   free(blocks);
-
 }
 
 
