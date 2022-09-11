@@ -10,4 +10,4 @@ solver: solver.o io.o
 
 .phony: clean
 clean:
-	rm *.o NonogramSolver
+	rm *.o NonogramSolver a.out
