@@ -6,8 +6,8 @@ A nonogram is a japenese puzzle, where you are given the rough layout of how man
 [Explination of rules](https://www.youtube.com/watch?v=zisu0Qf4TAI)   
 
 ## General words I use that I should explain:
-- Block: the number written to the left of the row / above the column
-- space / index: the box coresponding to wherever on the array / prob array I'm refrencing
+- Clue / Block / number: the number written to the left of the row / above the column
+- Cell / index: the box coresponding to wherever on the array / prob array I'm refrencing
 - Block array: Pretty much a section of the row / column array passed into thesolve function
 - Probability array: a copy of the main array that contains pointers to the indexes.
 - blocks: the number of blocks in the array
