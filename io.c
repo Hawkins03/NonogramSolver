@@ -1,64 +1,54 @@
 #include "io.h"
 
-static unsigned short int WIDTH = 0;
-static unsigned short int HEIGHT = 0;
-
 /*
  * called by get_block_data. It fetches the data from the file.
  *
  *
  */
-static int fetch_from_file(FILE *in_file,
-                           clue_storage_t *blocks, bool is_row) {
+static int fetch_from_file(FILE *in_file, int width, int height,
+                           unsigned short int* blocks) {
 
-  if ((!in_file) || (!blocks))
+  if ((!in_file) || (!blocks)) {
+    printf("failed to find blocks\n");
     return -1;
-
-  if ((!(blocks->rows)) || (!blocks->columns))
-    return -1;
+  }
 
   int status;
   unsigned short int buffer;
-  clue_arr block_arr[WIDTH][HEIGHT] = ((is_row) ? (blocks->rows):(blocks->columns));
 
   printf("malloc good. (%lu)\n", sizeof(*blocks));
 
   // reading in rows
-  for (int j = 0; j < HEIGHT; j++) {
+  for (int i = 0; i < height; i++) {
     int row_sum = -1;
     int num_blocks = 0;
 
-    printf("1.\n");
     // finding the number of blocks in the row
     status = fscanf(in_file, "%d ", &num_blocks);
     if (status < 1) {
       fclose(in_file);
-      free(blocks);
+      in_file = NULL;
       return FILE_ERROR;
     }
 
-    printf("2.\n");
-    printf("number: %d, ", num_blocks);
-    fflush(NULL);
+    printf("# %d, ", num_blocks);
 
     // reading in blocks
-    for (int k = 0; k < num_blocks; k++) {
+    for (int j = 0; j < num_blocks; j++) {
       status = fscanf(in_file, "%hu ", &buffer);
       if ((status < 1)) {
+        printf("fscan error!");
         fclose(in_file);
+        in_file = NULL;
         return FILE_ERROR;
       }
 
-      printf("3. ");
-      fflush(NULL);
-
-      printf("%hu", buffer);
+      printf("%hu ", buffer);
       fflush(NULL);
       // saving value
-     if (row_sum + buffer + 1 <= WIDTH) {
-        printf("%hu (%d, %d)", buffer, j, k);
+     if (row_sum + buffer + 1 <= width) {
         fflush(NULL);
-        *(block_arr[j][k]) = buffer;
+        *(blocks + i * width + j) = buffer;
         row_sum += buffer + 1;
       }
     }
@@ -93,7 +83,8 @@ static int fetch_from_file(FILE *in_file,
  * the length of that row / length.
  *
  */
-clue_storage_t *get_block_data(char *file_name) {
+unsigned short int *get_block_data(char *file_name, int *width_ptr,
+                                   int *height_ptr) {
 
   if ((!file_name))
     return NULL;
@@ -108,46 +99,84 @@ clue_storage_t *get_block_data(char *file_name) {
 
   int status;
 
+  int height, width;
 
   //getting dimensions of nonogram
-  status = fscanf(in_file, "%hu %hu\n", &HEIGHT, &WIDTH);
+  status = fscanf(in_file, "%d %d\n", &height, &width);
 
-  if ((status < 2) || (HEIGHT > MAX_SIZE) || (WIDTH > MAX_SIZE)) {
+  if (status < 2) {
     printf("failed to read in width and height\n");
     fclose(in_file);
     return NULL;
   }
 
-  printf("width: %d, height: %d\n", WIDTH, HEIGHT);
+  printf("width: %d, height: %d\n", width, height);
 
+  *height_ptr = height;
+  *width_ptr = width;
 
-
-  // mallocing row blocks ()
-  clue_storage_t *blocks = malloc(sizeof(clue_storage_t));
-
-
-
-  status = fetch_from_file(in_file, blocks, true);
-  if (status < 1) {
+  if ((width > MAX_SIZE) || (width <= 0) ||
+      (height > MAX_SIZE) || (height <= 0)) {
     fclose(in_file);
+    in_file = NULL;
     return NULL;
   }
 
+  unsigned short int *blocks =
+                      malloc(sizeof(unsigned short int) * width * height * 2);
+  if (!blocks) {
+    return NULL;
+  }
 
+  status = fetch_from_file(in_file, width, height, blocks);
+  if (status < 1) {
+    free(blocks);
+    blocks = NULL;
+    fclose(in_file);
+    in_file = NULL;
+    return NULL;
+  }
 
-  /*
-
-  `  */
+  status = fetch_from_file(in_file, height, width, blocks + width * height);
+  if (status < 1) {
+    free(blocks);
+    blocks = NULL;
+    fclose(in_file);
+    in_file = NULL;
+    return NULL;
+  }
 
   return blocks;
 }
 
 int main(int argc, char *argv[]) {
-  clue_storage_t *blocks = get_block_data("blocks.txt");
+  int *height_ptr = malloc(sizeof(int));
+  int *width_ptr = malloc(sizeof(int));
+  unsigned short int *blocks = get_block_data("blocks.txt",
+                                              width_ptr, height_ptr);
   if (!blocks)
     return -1;
 
-  printf("block fetch good: %lu", sizeof(*blocks));
+  printf("block fetch good: %lu\n", sizeof(blocks));
+  printf("width = %d, height = %d\n", *(width_ptr), *(height_ptr));
+
+  for(int i = 0; i < 2; i++) {
+    for (int j = 0; j < *(height_ptr); j++) {
+      if (blocks == 0)
+        break;
+      for (int k = 0; k < *(width_ptr); k++) {
+        int offset = i * *(width_ptr) * *(height_ptr) + j * *(width_ptr) + k;
+        if (*(blocks + offset) == 0)
+          break;
+        printf("%hu ", *(blocks + offset));
+      }
+
+      printf("\n");
+    }
+
+    printf("\n");
+  }
+
   free(blocks);
 }
 

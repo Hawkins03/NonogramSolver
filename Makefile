@@ -8,6 +8,9 @@ DEPS = io.h solver.h
 solver: solver.o io.o
 	$(CC) -o NonogramSolver solver.o io.o $(CFLAGS)
 
+io-debug: io.o
+	$(CC) -o io io.o $(CFLAGS)
+
 .phony: clean
 clean:
 	rm *.o NonogramSolver a.out

@@ -11,13 +11,7 @@
 #define FILE_ERROR    (-3)
 #define INPUT_ERROR   (-4)
 
-typedef unsigned short int clue_arr[MAX_SIZE][MAX_SIZE/2];
-
-typedef struct clue_struct {
-  unsigned short int rows[MAX_SIZE][MAX_SIZE / 2];
-  unsigned short int columns[MAX_SIZE][MAX_SIZE / 2];
-} clue_storage_t;
-
-clue_storage_t *get_block_data(char *file_name);
+unsigned short int *get_block_data(char *file_name, int *height_ptr,
+                                   int *width_ptr);
 
 #endif //IO_H
