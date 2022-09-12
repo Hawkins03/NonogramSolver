@@ -15,33 +15,28 @@ static int fetch_from_file(FILE *in_file, int width, int height,
 
   int status;
   unsigned short int buffer;
+  char buffer_buffer = 0;
 
   printf("malloc good. (%lu)\n", sizeof(*blocks));
 
   // reading in rows
   for (int i = 0; i < height; i++) {
     int row_sum = -1;
-    int num_blocks = 0;
 
     // finding the number of blocks in the row
-    status = fscanf(in_file, "%d ", &num_blocks);
-    if (status < 1) {
-      fclose(in_file);
-      in_file = NULL;
-      return FILE_ERROR;
-    }
 
-    printf("# %d, ", num_blocks);
+    printf("# %d, ", i);
 
     // reading in blocks
-    for (int j = 0; j < num_blocks; j++) {
-      status = fscanf(in_file, "%hu ", &buffer);
+    for (int j = 0; j < width; j++) {
+      status = fscanf(in_file, "%hu", &buffer);
       if ((status < 1)) {
-        printf("fscan error!");
-        fclose(in_file);
-        in_file = NULL;
-        return FILE_ERROR;
+        return -1;
       }
+
+      status = fscanf(in_file, "%c", &buffer_buffer);
+      if (buffer_buffer != ' ')
+        break;
 
       printf("%hu ", buffer);
       fflush(NULL);
@@ -52,11 +47,12 @@ static int fetch_from_file(FILE *in_file, int width, int height,
         row_sum += buffer + 1;
       }
     }
-
-    status = fscanf(in_file, "\n");
+    if (buffer_buffer != '\n')
+      status = fscanf(in_file, "\n");
     printf("\n");
   }
-  status = fscanf(in_file, "\n");
+  if (buffer_buffer != '\n')
+    status = fscanf(in_file, "\n");
   printf("\n");
 
   return 1;
@@ -102,7 +98,7 @@ unsigned short int *get_block_data(char *file_name, int *width_ptr,
   int height, width;
 
   //getting dimensions of nonogram
-  status = fscanf(in_file, "%d %d\n", &height, &width);
+  status = fscanf(in_file, "%d %d\n\n", &height, &width);
 
   if (status < 2) {
     printf("failed to read in width and height\n");
