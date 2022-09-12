@@ -13,4 +13,4 @@ io-debug: io.o
 
 .phony: clean
 clean:
-	rm *.o NonogramSolver a.out
+	rm *.o NonogramSolver a.out io solver
