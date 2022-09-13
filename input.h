@@ -1,5 +1,5 @@
-#ifndef IO_H
-#define IO_H
+#ifndef INPUT_H
+#define INPUT_H
 
 #include "solver.h"
 #include <stdbool.h>
@@ -14,4 +14,4 @@
 unsigned short int *get_block_data(char *file_name, int *height_ptr,
                                    int *width_ptr);
 
-#endif //IO_H
+#endif //INPUT_H

@@ -1,4 +1,4 @@
-#include "io.h"
+#include "input.h"
 
 /*
  * called by get_block_data. It fetches the data from the file.
