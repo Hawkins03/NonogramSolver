@@ -9,8 +9,8 @@
 #define MAX_SIZE      (30)
 
 typedef struct cell_struct {
-  bool full;
-  bool empty;
+  bool data; // 0/1 = empty / full
+  bool enable; // 0/1 = can't / can write
 } cell_t;
 
 int solve(cell_t *prob_arr[], int length, int block_arr[], int blocks);
