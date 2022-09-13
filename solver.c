@@ -118,13 +118,11 @@ int solve(cell_t *prob_arr[], int length, int block_arr[], int blocks) {
   // 3 || | | |START HERE| || |END HERE||
   // Fnding constraints to the length
   for (int i = total_block_len; i < length; i++) {
-    if (prob_arr[i]->data) {
+
+    /* I'm confused, and I know I wrote this wrong. I'm probably going to
+     * revert it a bit and start from there
+    if ((prob_arr[i]->data) * (1 - prob_arr[i]->enable)) { // known full
       if (blocks == 1) {
-        for (int j = i; j < length; j++) {
-          prob_arr[j]->data = 0;
-          num_found+= prob_arr[i]->enable;
-          prob_arr[i]->enable = 0;
-        }
         num_found += solve(prob_arr, i, block_arr, 1);
         return num_found;
       }
@@ -132,7 +130,7 @@ int solve(cell_t *prob_arr[], int length, int block_arr[], int blocks) {
       num_found += solve(prob_arr, i - 1, block_arr, blocks);
     }
 
-    if ((1 - prob_arr[i]->data) * prob_arr[i]->enable) { //known empty
+    if ((1 - prob_arr[i]->data) * (1 - prob_arr[i]->enable)) { //known empty
       int offset = length - block_arr[0] - i;
       if (offset >= 0) {
         num_found += solve(prob_arr + offset, length - offset,
@@ -140,14 +138,15 @@ int solve(cell_t *prob_arr[], int length, int block_arr[], int blocks) {
 
         if (blocks == 1) {
           for (int j = 0; j < offset; j++) {
-            prob_arr[j]->empty = true;
-            num_found++;
+            prob_arr[j]->data = 0;
+            num_found += prob_arr[i]->enable;
+            prob_arr[i]->enable = 0;
           }
         }
       }
       else
         return -1; //WEE WOO WEE WOO, PROBLEM PROBLEM.
-    }
+    }*/
   }
 
   num_found += solve(prob_arr + block_arr[0] + 1, length - block_arr[0] - 1,
