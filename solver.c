@@ -27,11 +27,12 @@
  *  if not, just check for constraints on the length
  * end.
  */
-int solve(int *prob_arr[], int length, int block_arr[], int blocks) {
+int solve(cell_t *prob_arr[], int length, int block_arr[], int blocks) {
   int num_found = 0;
   if (blocks == 0) {
     for (int i = 0; i < length; i++) {
-      *prob_arr[i] = EMPTY;
+      prob_arr[i]->empty = true;
+      prob_arr[i]->full = false;
       num_found++;
     }
     return num_found;
@@ -50,13 +51,13 @@ int solve(int *prob_arr[], int length, int block_arr[], int blocks) {
     // 6 || | | |END HERE| || | | | | ||
     // making sure there's nothing to change length
     for (int i = 0; i < length - total_block_len; i++) {
-      if (*prob_arr[i] == FULL) {
+      if (prob_arr[i]->full) {
         num_found += solve(prob_arr, length - block_arr[i] + i, block_arr, 1);
         num_found += solve(prob_arr + block_arr[0] + 1, length - block_arr[0]
                            - 1, block_arr + 1, blocks - 1);
         return num_found;
       }
-      else if (*prob_arr[i] == EMPTY) {
+      else if (prob_arr[i]->empty) {
         num_found += solve(prob_arr + i + 1, length - i - 1, block_arr, blocks);
         return num_found;
       }
@@ -65,9 +66,9 @@ int solve(int *prob_arr[], int length, int block_arr[], int blocks) {
     // 6 || | | | |START HERE||END HERE| | | | ||
     // Filling in the parts that have to be full
     for (int i = length - total_block_len; i < block_arr[0]; i++) {
-      if ((*prob_arr[i] == EMPTY) && (i < block_arr[0])) {
+      if ((prob_arr[i]->empty) && (i < block_arr[0])) {
         for (int j = 0; j < i; j++) {
-          *prob_arr[i] = EMPTY;
+          prob_arr[i]->empty = true;
           num_found++;
         }
 
@@ -75,7 +76,7 @@ int solve(int *prob_arr[], int length, int block_arr[], int blocks) {
         return num_found;
       }
       else if (!prob_arr[i]) {// 0 = undecided (this should work as i intend it)
-        *prob_arr[i] = FULL;
+        prob_arr[i]->full = true;
         num_found++;
       }
     }
@@ -98,13 +99,13 @@ int solve(int *prob_arr[], int length, int block_arr[], int blocks) {
   else {
     // 3||START HERE| |END HERE| | || | ||
     for (int i = 0; i < block_arr[0]; i++) {
-      if (*prob_arr[i] == FULL) {
+      if (prob_arr[i]->full) {
         num_found += solve(prob_arr, block_arr[0] + i, block_arr, 1);
         num_found += solve(prob_arr + block_arr[0] + 1, length - block_arr[0]
                            - 1, block_arr + 1, length - 1);
         return num_found;
       }
-      if (*prob_arr[i] == EMPTY) {
+      if (prob_arr[i]->empty) {
          num_found += solve(prob_arr + i + 1, length - i - 1, block_arr,
                             blocks);
          return num_found;
@@ -116,10 +117,10 @@ int solve(int *prob_arr[], int length, int block_arr[], int blocks) {
   // 3 || | | |START HERE| || |END HERE||
   // Fnding constraints to the length
   for (int i = total_block_len; i < length; i++) {
-    if (*prob_arr[i] == EMPTY) {
+    if (prob_arr[i]->empty) {
       if (blocks == 1) {
         for (int j = i; j < length; j++) {
-          *prob_arr[j] = EMPTY;
+          prob_arr[j]->empty = true;
           num_found++;
         }
         num_found += solve(prob_arr, i, block_arr, 1);
@@ -128,7 +129,7 @@ int solve(int *prob_arr[], int length, int block_arr[], int blocks) {
 
       num_found += solve(prob_arr, i - 1, block_arr, blocks);
     }
-    if (*prob_arr[i] == FULL) {
+    if (prob_arr[i]->empty) {
       int offset = length - block_arr[0] - i;
       if (offset >= 0) {
         num_found += solve(prob_arr + offset, length - offset,
@@ -136,12 +137,12 @@ int solve(int *prob_arr[], int length, int block_arr[], int blocks) {
 
         if (blocks == 1) {
           for (int j = 0; j < offset; j++) {
-            *prob_arr[j] = EMPTY;
+            prob_arr[j]->empty = true;
             num_found++;
           }
         }
       }
-      else {
+      else
         return -1; //WEE WOO WEE WOO, PROBLEM PROBLEM.
     }
   }
@@ -159,10 +160,10 @@ int main(int argc, char *argv[]) {
 
   //non-temp variables
   int prev_sum = 0;
-  int array[width][height]; // make setup_array thingey.
+  cell_t *array[width][height]; // make setup_array thingey.
   int row_blocks[width][height / 2];
   int column_blocks[width][height / 2];
-  int *prob_arr[] = { 0 };
+  cell_t *prob_arr[] = { 0 };
 
   while (1) {
     int curr_sum = 0;
@@ -170,7 +171,7 @@ int main(int argc, char *argv[]) {
     //solving rows
     for (int i = 0; i < width; i++) {
       for (int j = i; j < height; j++)
-        prob_arr[j] = &array[i][j];
+        prob_arr[j] = array[i][j];
 
       curr_sum += solve(prob_arr, width, row_blocks[i],
                         (int) sizeof(row_blocks[i]) / sizeof(int));
@@ -179,7 +180,7 @@ int main(int argc, char *argv[]) {
     //solving columns
     for (int i = 0; i < height; i++) {
       for (int j = i; j < width; j++)
-        prob_arr[j] = &array[i][j];
+        prob_arr[j] = array[i][j];
 
     curr_sum += solve(prob_arr, width, column_blocks[i],
                       (int) sizeof(column_blocks[i]) / sizeof(int));

@@ -8,6 +8,11 @@
 
 #define MAX_SIZE      (30)
 
-int solve(int *prob_arr[], int length, int block_arr[], int blocks);
+typedef struct cell_struct {
+  bool full;
+  bool empty;
+} cell_t;
+
+int solve(cell_t *prob_arr[], int length, int block_arr[], int blocks);
 
 #endif
