@@ -16,5 +16,6 @@ typedef struct cell_struct {
 } cell_t;
 
 int solve(cell_t *prob_arr[], int length, int block_arr[], int blocks);
+void print_grid(cell_t *grid[MAX_SIZE][MAX_SIZE], int width, int height);
 
 #endif
