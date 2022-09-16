@@ -5,6 +5,30 @@
 //with things. IDK why i decided to mess up the pointers as well.
 //
 
+void print_grid(cell_t *grid[MAX_SIZE][MAX_SIZE], int width, int height) {
+  if (!grid)
+    printf("Error, null grid.");
+  if ((width <= 0) || (height <= 0) || (width > MAX_SIZE) || (height > MAX_SIZE))
+    printf("error, dimensions out of bounds.");
+
+  for (int i = 0; i < height; i++) {
+    for (int j = 0; j < width; j++) {
+      switch ((short) grid[i][j]->enable + (short) 2* grid[i][j]->data) {
+        case 3:
+          printf("X");
+          break;
+        case 1:
+          printf(" ");
+          break;
+        default:
+          printf("?");
+          break;
+      }
+    }
+    printf("\n");
+  }
+}
+
 /*
  * solves a row / column in a nonogram.
  * returns the sum of the empty / full blocks found.
