@@ -1,19 +1,5 @@
 #include "solver.h"
 
-//reconfigure, not reseting prob_arr[i] to -1 or -2, instead, empty = -1,
-//full = 1 and undecided = 0. This way, I should have to do less work to mess
-//with things. IDK why i decided to mess up the pointers as well.
-//
-
-void check_pointers(int width, int height, cell_t *grid[height][width]) {
-  for (int i = 0; i < height; i++) {
-    for (int j = 0; j < width; j++) {
-      printf("%d, %d: %p\n", i, j, grid[i][j]);
-      fflush(NULL);
-    }
-  }
-}
-
 /*
  * prob_arr = probability array from solve
  * front_offset = how much you plan to shorten it from the front
@@ -25,24 +11,25 @@ void check_pointers(int width, int height, cell_t *grid[height][width]) {
  *
  * prints the debug for the branch.
  */
-void note_branch(cell_t **prob_arr, int front_offset, int end_offset, int size,
-                 unsigned short int *block_arr, int blocks, int branch_num) {
+static void note_branch(cell_t **prob_arr, int front_offset, int end_offset,
+                        int size, unsigned short int *block_arr, int blocks,
+                                                              int branch_num) {
   for (int i = 0; i < blocks; i++)
     printf("%hu ", block_arr[i]);
   printf("|");
 
   for (int i = 0; i < front_offset; i++)
     printf("-");
-
   for (int i = 0; i < size; i++) {
-    if (!(prob_arr[i]->enable)) {
-      if (prob_arr[i]->data)
-        printf("%c", 219);
-      else
-        printf("X");
-    }
-    else
+    if (prob_arr[i]->enable) {
       printf("?");
+    }
+    else {
+      if (prob_arr[i]->data)
+        printf("X");
+      else
+        printf(".");
+    }
   }
 
   for (int i = 0; i < end_offset; i++)
@@ -62,14 +49,14 @@ void print_grid(int width, int height, cell_t *grid[height][width]) {
 
   for (int i = 0; i < height; i++) {
     for (int j = 0; j < width; j++) {
-      if (!grid[i][j]->enable) {
+      if (grid[i][j]->enable) {
+        printf("?");
+      }
+      else {
         if (grid[i][j]->data)
           printf("X");
         else
-          printf(" ");
-      }
-      else {
-        printf("?");
+          printf(".");
       }
     }
     printf("\n");
@@ -101,11 +88,9 @@ void print_grid(int width, int height, cell_t *grid[height][width]) {
  */
 int solve(cell_t **prob_arr, int length, unsigned short int *block_arr,
                                                                   int blocks) {
-  printf("starting new block:\n");
   /* checking for blocks being done */
   int num_found = 0;
   if ((blocks == 0) || (*block_arr == 0)) {
-    printf("ENDING!, empty block / block_arr\n");
     for (int i = 0; i < length; i++) {
       (prob_arr[i])->data = 0;
       num_found+= (prob_arr[i])->enable;
@@ -115,22 +100,15 @@ int solve(cell_t **prob_arr, int length, unsigned short int *block_arr,
   }
 
   // counting the length
-  int total_block_len = -1;
+  int total_block_len = blocks - 1;
   for (int i = 0; i < blocks; i++)
-    if (block_arr[i] > 0)
-      total_block_len += block_arr[i] + 1;
+    total_block_len += block_arr[i];
 
   if (length < total_block_len) {
-    printf("error, length < total block length %d", total_block_len);
     return num_found;
   }
 
-  printf("block: %hu ttl: %d len: %d ttl_len %d\n", *block_arr, blocks, length,
-         total_block_len);
-
   if (*block_arr > length - total_block_len) {
-    printf("filling blocks:\n");
-    printf(" looking for constricting factors\n");
     // 6 || | | |END HERE| || | | | | ||
     // making sure there's nothing to change length
     for (int i = 0; i < length - total_block_len; i++) {
@@ -165,11 +143,9 @@ int solve(cell_t **prob_arr, int length, unsigned short int *block_arr,
 
     // 6 || | | | |START HERE||END HERE| | | | ||
     // Filling in the parts that have to be full
-    printf("Filling middle\n");
     for (int i = length - total_block_len; i < block_arr[0]; i++) {
-      printf("i: %d\n", i);
       prob_arr[i]->data = 1;
-      num_found+=prob_arr[i]->enable;
+      num_found += prob_arr[i]->enable;
       prob_arr[i]->enable = 0;
     }
   }
@@ -237,34 +213,38 @@ int solve(cell_t **prob_arr, int length, unsigned short int *block_arr,
   if (blocks == 1)
     return num_found;
   // ---------------------------------- BLOCK 9 -------------------------------
-  note_branch(prob_arr + *block_arr + 2, *block_arr + 2, 0,
-              length - *block_arr - 1, block_arr, blocks, 9);
-  num_found += solve(prob_arr + *block_arr + 2, length - *block_arr - 1,
-                     block_arr + 1, blocks - 1);
+  note_branch(prob_arr + *block_arr + 1, *block_arr, 0,
+              length - *block_arr - 2, block_arr + 1, blocks - 1, 9);
+  fflush(NULL);
+  num_found += solve(prob_arr + *block_arr + 1, length - *block_arr - 1,
+                     block_arr , blocks - 1);
   return num_found;
 }
 
 int solver_loop(int width, int height, cell_t *array[height][width],
-                unsigned short int *blocks) {
+                block_arr_t **blocks) {
   cell_t *prob_arr[width];
-  print_grid(width, height, array);
-  //check_pointers(width, height, array);
   int curr_sum = 0;
 
+  printf("\nSTARTING ROWS\n\n");
   //solving rows
   for (int i = 0; i < height; i++) {
-    curr_sum += solve(array[i], width, blocks + height * i, width - 1);
+    curr_sum += solve(array[i], width, blocks[0][i].arr, blocks[0][i].blocks);
+    note_branch(array[i], 0, 0, width, blocks[0][i].arr, blocks[0][i].blocks,
+                0);
   }
 
+
+  printf("\nSTARTING COLUMNS\n\n");
   //solving columns
-  for (int i = 0; i < height; i++) {
+  for (int i = 0; i < width; i++) {
+    for (int j = 0; j < height; j++)
+      prob_arr[j] = array[i][j];
+    curr_sum += solve(prob_arr, height, blocks[1][i].arr, blocks[1][i].blocks);
+    note_branch(array[i], 0, 0, height, blocks[1][i].arr, blocks[1][i].blocks,
+                0);
 
-    curr_sum += solve(prob_arr, height, blocks + width * height + width * i,
-                      height - 1);
   }
-
-  // counting up total and comparing to prev loop to see if we can run again
-  // or if we've stagnated.
 
   return curr_sum;
 }
@@ -274,7 +254,7 @@ int main(int argc, char *argv[]) {
 
   char *file_name = "blocks.txt";
 
-  unsigned short int *blocks = get_block_data(file_name, &height, &width);
+  block_arr_t **blocks = get_block_data(file_name, &height, &width);
   if (!blocks)
     return -1;
   printf("width: %d height, %d\n", width, height);
@@ -289,7 +269,6 @@ int main(int argc, char *argv[]) {
       array[i][j] = &array_setup[i][j];
       array_setup[i][j].data = 0;
       array_setup[i][j].enable = 1;
-      printf("%d, %d: %p %p\n", i, j, &array_setup[i][j], array[i][j]);
     }
   }
 
@@ -297,10 +276,10 @@ int main(int argc, char *argv[]) {
 
   while (1) {
     int curr_sum = solver_loop(width, height, array, blocks);
-    print_grid(width ,height, array);
     if (prev_sum >= curr_sum) {
       break;
     }
+    prev_sum = curr_sum;
   }
 
   return 0;

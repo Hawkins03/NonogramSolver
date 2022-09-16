@@ -15,10 +15,10 @@ typedef struct cell_struct {
   bool enable; // 0/1 = can't / can write
 } cell_t;
 
-int solve(cell_t **prob_arr, int length, block_arr_t **block_arr,
+int solve(cell_t **prob_arr, int length, unsigned short int block_arr[],
                                          int blocks);
 int solver_loop(int width, int height, cell_t *array[height][width],
-               unsigned short int *blocks);
+               block_arr_t **blocks);
 void print_grid(int width, int height, cell_t *grid[height][width]);
 
 #endif
