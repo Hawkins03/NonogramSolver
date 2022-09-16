@@ -9,19 +9,26 @@ int main(int argc, char *argv[]) {
   printf("Function good.\n");
   printf("width = %d, height = %d\n", width, height);
 
-  for (int j = 0; j < height; j++) {
-    for (int k = 0; k < width; k++) {
-      printf("%hu ", blocks[0][j].arr[k]);
+  for (int i = 0; i < height; i++) {
+    printf("%p, ", blocks[0][i].arr);
+    printf("%hu: ", blocks[0][i].blocks);
+    for (int k = 0; k < blocks[0][i].blocks; k++) {
+      printf("%hu ", blocks[0][i].arr[k]);
     }
     printf("\n");
   }
   printf("\n");
 
-  for (int j = 0; j < width; j++) {
-    for (int k = 0; k < height; k++) {
-      printf("%hu ", blocks[1][j].arr[k]);
+  for (int i = 0; i < width; i++) {
+    printf("%p, ", &blocks[1][i].arr);
+    printf("%hu: ", blocks[1][i].blocks);
+    fflush(NULL);
+    if (blocks[1][i].arr) {
+      for (int k = 0; k < blocks[1][i].blocks; k++) {
+        printf("%hu ", blocks[1][i].arr[k]);
+      }
+      printf("\n");
     }
-    printf("\n");
   }
   printf("\n");
   free(blocks);
