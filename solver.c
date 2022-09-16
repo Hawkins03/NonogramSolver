@@ -118,6 +118,13 @@ int solve(cell_t *prob_arr[], int length, int block_arr[], int blocks) {
   // 3 || | | |START HERE| || |END HERE||
   // Fnding constraints to the length
   for (int i = total_block_len; i < length; i++) {
+    if (prob_arr[i]->enable && prob_arr[i]->data) {// full
+      if ((length - i - blocks[0] >= 0) && (length - blocks[0] < i))
+        solve(prob_arr + length - i - blocks[i])
+    }
+    else if (prob_arr[i]->enable) {
+
+    }
 
     /* I'm confused, and I know I wrote this wrong. I'm probably going to
      * revert it a bit and start from there
@@ -156,14 +163,23 @@ int solve(cell_t *prob_arr[], int length, int block_arr[], int blocks) {
 
 
 int main(int argc, char *argv[]) {
-  // TEMP VARIABLES UNTIL I CAN MAKE A REGEX TO PULL INFO IN
-  int width = 10;
-  int height = 10;
+  int width, height;
+
+  char *file_name = "blocks.txt";
+  FILE *in_file = fopen(file_name, "r");
+
+  if (!in_file) {
+    printf("error opening file.");
+    return -1;
+  }
+
+  unsigned short int *blocks = get_block_data(file_name, &height, &width);
+
 
   //non-temp variables
   int prev_sum = 0;
   cell_t *array[width][height]; // make setup_array thingey.
-  int row_blocks[width][height / 2];
+  int row_blocks[width][height / 2] = ;
   int column_blocks[width][height / 2];
   cell_t *prob_arr[] = { 0 };
 

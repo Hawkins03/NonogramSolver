@@ -1,7 +1,9 @@
 #ifndef SOLVER_H
 #define SOLVER_H
 
+#include "io.h"
 #include <stdbool.h>
+#include <stdio.h>
 
 #define FULL          (1)
 #define EMPTY         (-1)

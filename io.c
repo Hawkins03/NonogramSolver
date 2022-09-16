@@ -1,4 +1,4 @@
-#include "input.h"
+#include "io.h"
 
 /*
  * called by get_block_data. It fetches the data from the file.
@@ -55,6 +55,30 @@ static int fetch_from_file(FILE *in_file, int width, int height,
   printf("\n");
 
   return 1;
+}
+
+void print_grid(cell_t *grid[MAX_SIZE][MAX_SIZE], int width, int height) {
+  if (!grid)
+    printf("Error, null grid.");
+  if ((width <= 0) || (height <= 0) || (width > MAX_SIZE) || (height > MAX_SIZE))
+    printf("error, dimensions out of bounds.");
+
+  for (int i = 0; i < height; i++) {
+    for (int j = 0; j < width; j++) {
+      switch ((short) grid[i][j]->enable + (short) 2* grid[i][j]->data) {
+        case 3:
+          printf("X");
+          break;
+        case 1:
+          printf(" ");
+          break;
+        default:
+          printf("?");
+          break;
+      }
+    }
+    printf("\n");
+  }
 }
 
 /*
@@ -177,5 +201,3 @@ int main(int argc, char *argv[]) {
 
   free(blocks);
 }
-
-
