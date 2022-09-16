@@ -14,6 +14,46 @@ void check_pointers(int width, int height, cell_t *grid[height][width]) {
   }
 }
 
+/*
+ * prob_arr = probability array from solve
+ * front_offset = how much you plan to shorten it from the front
+ * end_offset = how much you plan to shorten it from the end
+ * size = the new size of the prob arr
+ * block_arr = the array of blocks from solve
+ * blocks = the number of blocks
+ * branch_num = the branch location
+ *
+ * prints the debug for the branch.
+ */
+void note_branch(cell_t **prob_arr, int front_offset, int end_offset, int size,
+                 unsigned short int *block_arr, int blocks, int branch_num) {
+  for (int i = 0; i < blocks; i++)
+    printf("%hu ", block_arr[i]);
+
+  printf("|");
+  for (int i = 0; i < front_offset; i++) {
+    printf("-");
+  }
+  for (int i = 0; i < size; i++) {
+    if (!(prob_arr[i]->enable)) {
+      if (prob_arr[i]->data)
+        printf("%c", 219);
+      else
+        printf("X");
+    }
+    else
+      printf("?");
+  }
+  
+  for (int i = 0; i < end_offset; i++)
+    printf("-");
+
+  printf("| (%d)\n", branch_num);
+}
+
+/*
+ * prints the new grid for each itteration.
+ */
 void print_grid(int width, int height, cell_t *grid[height][width]) {
   if (!grid)
     printf("Error, null grid.");
@@ -84,60 +124,60 @@ int solve(cell_t **prob_arr, int length, unsigned short int *block_arr,
          total_block_len);
 
   if (*block_arr > length - total_block_len) {
+    printf("filling blocks:\n");
+    printf(" looking for constricting factors\n");
     // 6 || | | |END HERE| || | | | | ||
     // making sure there's nothing to change length
     for (int i = 0; i < length - total_block_len; i++) {
-      if (prob_arr[i]->enable)
-        break;
+      if (prob_arr[i]->enable) // ignores any undecided blocks
+        continue;
 
       if (prob_arr[i]->data) {
-        num_found += solve(prob_arr, length - block_arr[i] + i, block_arr, 1);
+        // ---------------------------- BRANCH 1 ------------------------------
+        note_branch(prob_arr, 0, *block_arr + i, length - *block_arr + i,
+                    block_arr, 1, 1);
+        num_found += solve(prob_arr, length - *block_arr + i, block_arr, 1);
+        // ---------------------------- BRANCH 2 ------------------------------
+        note_branch(prob_arr + *block_arr + 1, *block_arr + 1, 0,
+                    length - *block_arr - 1, block_arr + 1, blocks - 1, 2);
         num_found += solve(prob_arr + block_arr[0] + 1, length - block_arr[0]
                            - 1, block_arr + 1, blocks - 1);
         return num_found;
       }
-      else {
+      else { // empty
+        for (int j = 0; j < i; j++) {
+          prob_arr[j]->data = 0;
+          num_found += prob_arr[j]->enable;
+          prob_arr[j]->enable = 0;
+        }
+        // constricting to beyond i.
+        // ---------------------------- BRANCH 3 ------------------------------
+        note_branch(prob_arr, i + 1, 0, length - i - 1, block_arr, blocks, 3);
         num_found += solve(prob_arr + i + 1, length - i - 1, block_arr, blocks);
         return num_found;
       }
     }
 
-    printf("2.\n");
-    fflush(NULL);
-
     // 6 || | | | |START HERE||END HERE| | | | ||
     // Filling in the parts that have to be full
+    printf("Filling middle\n");
     for (int i = length - total_block_len; i < block_arr[0]; i++) {
       printf("i: %d", i);
       prob_arr[i]->data = 1;
       num_found+=prob_arr[i]->enable;
       prob_arr[i]->enable = 0;
     }
-    printf("\n");
-    fflush(NULL);
   }
-
-  /*
-   * --------------------PROGRAMMER NOTES---------------------------
-   * line 42 (if ((*prob...)
-   * was built to handle the following situation:
-   * 6|| | | | |0|| | | | | || || *0 = empty, X = FULL " "= undecided
-   * If I found a simialar situation (I won't now) where the loop started before
-   * that 0, then the array would look like this afterwords:
-   * 6|| | |X|X|0|| | | | | || ||
-   * impossible instead of:
-   * 6||0|0|0|0|0|| | | | | || ||.
-   * (as it stands, the loop would start at that 0 and then set the earlier
-   * numbers to 0, (then move on to solve the damn thing.))
-   */
-
   else {
     // 3||START HERE| |END HERE| | || | ||
     for (int i = 0; i < block_arr[0]; i++) {
-      if (prob_arr[i]->enable)
+      if (prob_arr[i]->enable) // skips any undecided
         continue;
 
-      if (prob_arr[i]->data) {
+      if (prob_arr[i]->data) { // other forward part, same as b4.
+        // ---------------------------- BLOCK 4 -------------------------------
+        note_branch(prob_arr, 0, length - *block_arr - i, *block_arr + i,
+                    block_arr, 1, 4);
         num_found += solve(prob_arr, block_arr[0] + i, block_arr, 1);
         num_found += solve(prob_arr + block_arr[0] + 1, length - block_arr[0]
                            - 1, block_arr + 1, length - 1);
@@ -176,8 +216,8 @@ int solve(cell_t **prob_arr, int length, unsigned short int *block_arr,
     }
   }
 
-  num_found += solve(prob_arr + block_arr[0] + 1, length - block_arr[0] - 1,
-                     block_arr + 1, blocks + 1);
+  num_found += solve(prob_arr + block_arr[0] + 2, length - block_arr[0] - 2,
+                     block_arr + 1, blocks - 1);
   return num_found;
 }
 
