@@ -5,7 +5,16 @@
 //with things. IDK why i decided to mess up the pointers as well.
 //
 
-void print_grid(cell_t *grid[MAX_SIZE][MAX_SIZE], int width, int height) {
+void check_pointers(int width, int height, cell_t *grid[height][width]) {
+  for (int i = 0; i < height; i++) {
+    for (int j = 0; j < width; j++) {
+      printf("%d, %d: %p\n", i, j, grid[i][j]);
+      fflush(NULL);
+    }
+  }
+}
+
+void print_grid(int width, int height, cell_t *grid[height][width]) {
   if (!grid)
     printf("Error, null grid.");
   if ((width <= 0) || (height <= 0) || (width > MAX_SIZE) || (height > MAX_SIZE))
@@ -13,19 +22,18 @@ void print_grid(cell_t *grid[MAX_SIZE][MAX_SIZE], int width, int height) {
 
   for (int i = 0; i < height; i++) {
     for (int j = 0; j < width; j++) {
-      switch ((short) grid[i][j]->enable + (short) 2* grid[i][j]->data) {
-        case 3:
+      if (!grid[i][j]->enable) {
+        if (grid[i][j]->data)
           printf("X");
-          break;
-        case 1:
+        else
           printf(" ");
-          break;
-        default:
-          printf("?");
-          break;
+      }
+      else {
+        printf("?");
       }
     }
     printf("\n");
+    fflush(NULL);
   }
 }
 
@@ -51,28 +59,31 @@ void print_grid(cell_t *grid[MAX_SIZE][MAX_SIZE], int width, int height) {
  *  if not, just check for constraints on the length
  * end.
  */
-int solve(cell_t *prob_arr[], int length, unsigned short int *block_arr,
-          int blocks) {
+int solve(cell_t **prob_arr, int length, unsigned short int *block_arr,
+                                                                  int blocks) {
   int num_found = 0;
   if ((!blocks) || (!(*block_arr))) {
     for (int i = 0; i < length; i++) {
-      prob_arr[i]->data = 0;
-      num_found+= prob_arr[i]->enable;
-      prob_arr[i]->enable = 0;
+      (prob_arr[i])->data = 0;
+      num_found+= (prob_arr[i])->enable;
+      (prob_arr[i])->enable = 0;
     }
     return num_found;
   }
-
-  if (length <= 0)
-    return num_found;
 
   // counting the length
   int total_block_len = -1;
   for (int i = 0; i < blocks; i++)
     total_block_len += block_arr[i] + 1;
 
+  if (length < total_block_len)
+    return num_found;
 
-  if (block_arr[0] > length - total_block_len) {
+
+  printf("block: %hu ttl: %d len: %d ttl_len %d\n", *block_arr, blocks, length,
+         total_block_len);
+
+  if (*block_arr > length - total_block_len) {
     // 6 || | | |END HERE| || | | | | ||
     // making sure there's nothing to change length
     for (int i = 0; i < length - total_block_len; i++) {
@@ -91,18 +102,19 @@ int solve(cell_t *prob_arr[], int length, unsigned short int *block_arr,
       }
     }
 
+    printf("2.\n");
+    fflush(NULL);
+
     // 6 || | | | |START HERE||END HERE| | | | ||
     // Filling in the parts that have to be full
     for (int i = length - total_block_len; i < block_arr[0]; i++) {
-      for (int j = 0; j < i; j++) {
-        prob_arr[i]->data = 1;
-        num_found+=prob_arr[i]->enable;
-        prob_arr[i]->enable = 0;
-      }
-
-      num_found += solve(prob_arr + i + 1, length - i - 1, block_arr, blocks);
-      return num_found;
+      printf("i: %d", i);
+      prob_arr[i]->data = 1;
+      num_found+=prob_arr[i]->enable;
+      prob_arr[i]->enable = 0;
     }
+    printf("\n");
+    fflush(NULL);
   }
 
   /*
@@ -123,7 +135,7 @@ int solve(cell_t *prob_arr[], int length, unsigned short int *block_arr,
     // 3||START HERE| |END HERE| | || | ||
     for (int i = 0; i < block_arr[0]; i++) {
       if (prob_arr[i]->enable)
-        break;
+        continue;
 
       if (prob_arr[i]->data) {
         num_found += solve(prob_arr, block_arr[0] + i, block_arr, 1);
@@ -169,56 +181,66 @@ int solve(cell_t *prob_arr[], int length, unsigned short int *block_arr,
   return num_found;
 }
 
+int solver_loop(int width, int height, cell_t *array[height][width],
+                unsigned short int *blocks) {
+  cell_t *prob_arr[width];
+  print_grid(width, height, array);
+  //check_pointers(width, height, array);
+  int curr_sum = 0;
+
+  //solving rows
+  for (int i = 0; i < height; i++) {
+    curr_sum += solve(array[i], width, blocks + height * i, width / 2);
+  }
+
+  //solving columns
+  for (int i = 0; i < height; i++) {
+    for (int j = i; j < width; j++)
+      prob_arr[j] = array[i][j];
+
+    curr_sum += solve(prob_arr, height, blocks + width * height + width * i,
+                      height / 2);
+  }
+
+  // counting up total and comparing to prev loop to see if we can run again
+  // or if we've stagnated.
+
+  return curr_sum;
+}
 
 int main(int argc, char *argv[]) {
   int width, height;
 
   char *file_name = "blocks.txt";
-  FILE *in_file = fopen(file_name, "r");
-
-  if (!in_file) {
-    printf("error opening file.");
-    return -1;
-  }
 
   unsigned short int *blocks = get_block_data(file_name, &height, &width);
   if (!blocks)
     return -1;
+  printf("width: %d height, %d\n", width, height);
 
   //non-temp variables
   int prev_sum = 0;
-  cell_t *array[width][height]; // make setup_array thingey.
-  cell_t *prob_arr[] = { 0 };
+  cell_t array_setup[width][height]; // make setup_array thingey.
+  cell_t *array[width][height];
+
+  for (int i = 0; i < height; i++) {
+    for (int j = 0; j < width; j++) {
+      array[i][j] = &array_setup[i][j];
+      array_setup[i][j].data = 0;
+      array_setup[i][j].enable = 1;
+      printf("%d, %d: %p %p\n", i, j, &array_setup[i][j], array[i][j]);
+    }
+  }
+
+  printf("setup done!\n");
 
   while (1) {
-    int curr_sum = 0;
-
-    //solving rows
-    for (int i = 0; i < width; i++) {
-      for (int j = i; j < height; j++)
-        prob_arr[j] = array[i][j];
-
-      curr_sum += solve(prob_arr, width, blocks + height * i, width / 2);
+    int curr_sum = solver_loop(width, height, array, blocks);
+    print_grid(width ,height, array);
+    if (prev_sum >= curr_sum) {
+      break;
     }
-
-    //solving columns
-    for (int i = 0; i < height; i++) {
-      for (int j = i; j < width; j++)
-        prob_arr[j] = array[i][j];
-
-      curr_sum += solve(prob_arr, height, blocks + width * height + width * i,
-                        height / 2);
-    }
-
-    // counting up total and comparing to prev loop to see if we can run again
-    // or if we've stagnated.
-
-    if (curr_sum <= prev_sum) {
-      //display array
-      return 0;
-    }
-
-    prev_sum = curr_sum;
   }
+
   return 0;
 }
