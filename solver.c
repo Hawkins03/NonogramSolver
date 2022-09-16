@@ -51,9 +51,10 @@ void print_grid(cell_t *grid[MAX_SIZE][MAX_SIZE], int width, int height) {
  *  if not, just check for constraints on the length
  * end.
  */
-int solve(cell_t *prob_arr[], int length, int block_arr[], int blocks) {
+int solve(cell_t *prob_arr[], int length, unsigned short int *block_arr,
+          int blocks) {
   int num_found = 0;
-  if (blocks == 0) {
+  if ((!blocks) || (!(*block_arr))) {
     for (int i = 0; i < length; i++) {
       prob_arr[i]->data = 0;
       num_found+= prob_arr[i]->enable;
@@ -141,43 +142,26 @@ int solve(cell_t *prob_arr[], int length, int block_arr[], int blocks) {
   // 6 || | | | | || |START HERE| | |END HERE||
   // 3 || | | |START HERE| || |END HERE||
   // Fnding constraints to the length
-  for (int i = total_block_len; i < length; i++) {
-    if (prob_arr[i]->enable && prob_arr[i]->data) {// full
-      if ((length - i - blocks[0] >= 0) && (length - blocks[0] < i))
-        solve(prob_arr + length - i - blocks[i])
-    }
-    else if (prob_arr[i]->enable) {
+  int offset;
+  if (total_block_len > (length - block_arr[0]))
+    offset = total_block_len;
+  else
+    offset = length - block_arr[0];
 
-    }
-
-    /* I'm confused, and I know I wrote this wrong. I'm probably going to
-     * revert it a bit and start from there
-    if ((prob_arr[i]->data) * (1 - prob_arr[i]->enable)) { // known full
-      if (blocks == 1) {
-        num_found += solve(prob_arr, i, block_arr, 1);
-        return num_found;
-      }
-
-      num_found += solve(prob_arr, i - 1, block_arr, blocks);
-    }
-
-    if ((1 - prob_arr[i]->data) * (1 - prob_arr[i]->enable)) { //known empty
-      int offset = length - block_arr[0] - i;
-      if (offset >= 0) {
-        num_found += solve(prob_arr + offset, length - offset,
-                           block_arr, blocks);
-
-        if (blocks == 1) {
-          for (int j = 0; j < offset; j++) {
-            prob_arr[j]->data = 0;
-            num_found += prob_arr[i]->enable;
-            prob_arr[i]->enable = 0;
-          }
+  for (int i = offset; i < length; i++) {
+    if ((blocks == 1) && (prob_arr[i]->enable)) {
+      if (prob_arr[i]->data)
+        solve(prob_arr + length - i - block_arr[0],
+              i + *block_arr, block_arr, 1);
+      else {
+        for (int j = i; j < length; j++) {
+          prob_arr[j]->data = 0;
+          num_found += prob_arr[j]->enable;
+          prob_arr[j]->enable = 0;
         }
+        solve(prob_arr, length - i, block_arr, blocks);
       }
-      else
-        return -1; //WEE WOO WEE WOO, PROBLEM PROBLEM.
-    }*/
+    }
   }
 
   num_found += solve(prob_arr + block_arr[0] + 1, length - block_arr[0] - 1,
@@ -198,13 +182,12 @@ int main(int argc, char *argv[]) {
   }
 
   unsigned short int *blocks = get_block_data(file_name, &height, &width);
-
+  if (!blocks)
+    return -1;
 
   //non-temp variables
   int prev_sum = 0;
   cell_t *array[width][height]; // make setup_array thingey.
-  int row_blocks[width][height / 2] = ;
-  int column_blocks[width][height / 2];
   cell_t *prob_arr[] = { 0 };
 
   while (1) {
@@ -215,8 +198,7 @@ int main(int argc, char *argv[]) {
       for (int j = i; j < height; j++)
         prob_arr[j] = array[i][j];
 
-      curr_sum += solve(prob_arr, width, row_blocks[i],
-                        (int) sizeof(row_blocks[i]) / sizeof(int));
+      curr_sum += solve(prob_arr, width, blocks + height * i, width / 2);
     }
 
     //solving columns
@@ -224,8 +206,8 @@ int main(int argc, char *argv[]) {
       for (int j = i; j < width; j++)
         prob_arr[j] = array[i][j];
 
-    curr_sum += solve(prob_arr, width, column_blocks[i],
-                      (int) sizeof(column_blocks[i]) / sizeof(int));
+      curr_sum += solve(prob_arr, height, blocks + width * height + width * i,
+                        height / 2);
     }
 
     // counting up total and comparing to prev loop to see if we can run again

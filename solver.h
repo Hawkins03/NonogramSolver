@@ -15,7 +15,8 @@ typedef struct cell_struct {
   bool enable; // 0/1 = can't / can write
 } cell_t;
 
-int solve(cell_t *prob_arr[], int length, int block_arr[], int blocks);
+int solve(cell_t *prob_arr[], int length, unsigned short int block_arr[],
+          int blocks);
 void print_grid(cell_t *grid[MAX_SIZE][MAX_SIZE], int width, int height);
 
 #endif
