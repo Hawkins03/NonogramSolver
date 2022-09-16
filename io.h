@@ -17,6 +17,8 @@ typedef struct block_arr_struct {
   unsigned short int *arr;
 } block_arr_t;
 
+void close_vars(FILE *in_file, block_arr_t *rows, block_arr_t *cols,
+                       block_arr_t **blocks, int height, int width) {
 block_arr_t **get_block_data(char *file_name, int *height_ptr,
                              int *width_ptr);
 
