@@ -13,6 +13,5 @@
 
 unsigned short int *get_block_data(char *file_name, int *height_ptr,
                                    int *width_ptr);
-void print_grid(cell_t *grid[MAX_SIZE][MAX_SIZE], int width, int height);
 
 #endif //IO_H
