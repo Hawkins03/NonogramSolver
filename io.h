@@ -11,7 +11,13 @@
 #define INPUT_ERROR   (-4)
 #define MAX_SIZE      (30)
 
-unsigned short int *get_block_data(char *file_name, int *height_ptr,
-                                   int *width_ptr);
+typedef struct block_arr_struct {
+  int blocks;
+  int max_block_len;
+  unsigned short int *arr;
+} block_arr_t;
+
+block_arr_t **get_block_data(char *file_name, int *height_ptr,
+                             int *width_ptr);
 
 #endif //IO_H
