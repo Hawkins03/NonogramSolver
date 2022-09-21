@@ -71,3 +71,6 @@ algorithm wise, now I'm just working on optimizing storage requirements.
 
 In terms of a sense of how long this takes in total, here's a full flowchart of the program: (note, this is mainly for time calculation purposes)
 ![](Solver-flowchart.png)
+
+## Todo
+- impliment a system of having a min_block and a max_block - kinda already there, but if I find a block, that becomes the max (use min values to make sure the smallest max is the end max) and move the filling block to the end. Also impliment a counting system for full blocks, and if I do fill the block / find the full block, then add an empty space directly after.
