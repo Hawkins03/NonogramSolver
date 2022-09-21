@@ -1,17 +1,167 @@
 #include "solver.h"
 
+static int fill_cell(cell_t *cell) {
+  if (!cell)
+    return 0;
+  if (!cell->enable)
+    return 0;
+  cell->data = 1;
+  cell->enable = 0;
+  return 1;
+}
+
+static int empty_cell(cell_t *cell) {
+  if (!cell)
+    return 0;
+  if (!(cell->enable))
+    return 0;
+  cell->data = 0;
+  cell->enable = 0;
+  return 1;
+}
+
 /*
- * prob_arr = probability array from solve
- * front_offset = how much you plan to shorten it from the front
- * end_offset = how much you plan to shorten it from the end
- * size = the new size of the prob arr
- * block_arr = the array of blocks from solve
- * blocks = the number of blocks
- * branch_num = the branch location
+ * solves a particular row:
+ * prob_arr: the array of cells that the algorithm impliments over
+ * length: the length of that array (used so that I can mess with it)
+ * block_arr: the array of blocks/clues for that row
+ * blocks: the number of blocks in the array (again, so I can mess with it)
  *
- * prints the debug for the branch.
+ * how it works:
+ * 1. ensure everything exists (more an insanity check than an actual one)
+ * 2. find the total block length
+ * 3. for the first block:
+ *    a. find where it HAS to be
+ *    b. fill that space
+ * 4. go to the next block
  */
-static void note_branch(cell_t **prob_arr, int front_offset, int end_offset,
+static int solve_row(cell_t **prob_arr, int length,
+                     unsigned short int *block_arr, int blocks) {
+  int num_found = 0;
+
+  //insanity check
+  if ((blocks == 0) || (*block_arr == 0)) {
+    for (int i = 0; i < length; i++)
+      num_found += empty_cell(prob_arr[i]);
+    return num_found;
+  }
+
+  // calculating total_block_length
+  int total_block_len = blocks - 1;
+
+  for (int i = 0; i < blocks; i++)
+    total_block_len += block_arr[i];
+
+  if (length < total_block_len)
+    return num_found;
+
+  // main body
+  int max_index = 0;
+  int min_index = length - total_block_len;
+
+
+  // starting from max going to min shortening the thingey
+  for (int i = max_index; i > min_index + *block_arr; i--) {
+    if (prob_arr[i]->enable)
+      continue;
+
+    if (prob_arr[i]->data)
+      max_index = i + *block_arr;
+
+    else {
+      for (int j = 0; j < i; j++)
+        num_found += empty_cell(prob_arr[j]);
+
+      min_index = i;
+      return num_found;
+    }
+  }
+
+  // filling array
+  for (int i = min_index; i < max_index + *block_arr; i++)
+    num_found += fill_cell(prob_arr[i]);
+
+  if ((max_index - min_index == 0) && ((min_index + *block_arr + 1) < length))
+    empty_cell(prob_arr[min_index + *block_arr]);
+
+ if (blocks == 1)
+    return num_found;
+
+  num_found += solve_row(prob_arr + *block_arr + 1, length - *block_arr - 1,
+                     block_arr + 1, blocks - 1);
+  return num_found;
+}
+
+int solver_loop(int width, int height, cell_t *array[height][width],
+                block_arr_t **blocks) {
+  cell_t *prob_arr[width];
+  int curr_sum = 0;
+
+  //printf("\nSTARTING ROWS\n\n");
+  for (int i = 0; i < height; i++)
+    curr_sum += solve_row(array[i], width, blocks[0][i].arr,
+                          blocks[0][i].blocks);
+  //debug_row(array[i], 0, 0, width, blocks[0][i].arr, blocks[0][i].blocks, 0);
+
+
+  //printf("\nSTARTING COLUMNS\n\n");
+  for (int i = 0; i < width; i++) {
+    for (int j = 0; j < height; j++)
+      prob_arr[j] = array[i][j];
+    curr_sum += solve_row(prob_arr, height, blocks[1][i].arr,
+                          blocks[1][i].blocks);
+  }
+  //debug_row(array[i], 0, 0, height, blocks[1][i].arr, blocks[1][i].blocks, 0);
+
+  return curr_sum;
+}
+
+int main(int argc, char *argv[]) {
+  int width, height;
+
+  char *file_name = "blocks.txt";
+
+  block_arr_t **blocks = get_block_data(file_name, &height, &width);
+  if (!blocks)
+    return -1;
+  //printf("width: %d height, %d\n", width, height);
+
+  //non-temp variables
+  cell_t array_setup[width][height]; // make setup_array thingey.
+  cell_t *array[width][height];
+
+  for (int i = 0; i < height; i++) {
+    for (int j = 0; j < width; j++) {
+      array[i][j] = &array_setup[i][j];
+      array_setup[i][j].data = 0;
+      array_setup[i][j].enable = 1;
+    }
+  }
+
+  int curr_sum = 1;
+  while (curr_sum > 0) {
+    curr_sum = solver_loop(width, height, array, blocks);
+  }
+
+  for (int i = 0; i < height; i++) {
+    for (int j = 0; j < width; j++) {
+      if (array[i][j]->enable) {
+        printf("?");
+        continue;
+      }
+      if (array[i][j]->data)
+        printf("O");
+      else
+        printf("X");
+    }
+    printf("\n");
+  }
+
+  return 0;
+}
+
+/*
+static void debug_row(cell_t **prob_arr, int front_offset, int end_offset,
                         int size, unsigned short int *block_arr, int blocks,
                                                               int branch_num) {
   for (int i = 0; i < blocks; i++)
@@ -36,251 +186,5 @@ static void note_branch(cell_t **prob_arr, int front_offset, int end_offset,
     printf("-");
 
   printf("| (%d)\n", branch_num);
-}
+} */
 
-/*
- * prints the new grid for each itteration.
- */
-void print_grid(int width, int height, cell_t *grid[height][width]) {
-  if (!grid)
-    printf("Error, null grid.");
-  if ((width <= 0) || (height <= 0) || (width > MAX_SIZE) || (height > MAX_SIZE))
-    printf("error, dimensions out of bounds.");
-
-  for (int i = 0; i < height; i++) {
-    for (int j = 0; j < width; j++) {
-      if (grid[i][j]->enable) {
-        printf("?");
-      }
-      else {
-        if (grid[i][j]->data)
-          printf("X");
-        else
-          printf(".");
-      }
-    }
-    printf("\n");
-    fflush(NULL);
-  }
-}
-
-/*
- * solves a row / column in a nonogram.
- * returns the sum of the empty / full blocks found.
- *
- * Takes in a probability array (pointers to the main array)
- * also takes in the length of that array.
- *    (makes it easier to constrain the length when recursing)
- * In addition, it takes in an array of blocks (the little numbers to the side/
- * top of the nonogram)
- * also takes in the length of that array (again to make it easier to constrain)
- * quick flowchart:
- * Start:
- *  if length <= 0 || blocks <= 0 -> end
- *  Find total block len
-
- *  is the current block long enough to fill spaces?
- *   check before the spaces to be filled to see if we can constrain the length
- *   fill the spaces
- *
- *  if not, just check for constraints on the length
- * end.
- */
-int solve(cell_t **prob_arr, int length, unsigned short int *block_arr,
-                                                                  int blocks) {
-  /* checking for blocks being done */
-  int num_found = 0;
-  if ((blocks == 0) || (*block_arr == 0)) {
-    for (int i = 0; i < length; i++) {
-      (prob_arr[i])->data = 0;
-      num_found+= (prob_arr[i])->enable;
-      (prob_arr[i])->enable = 0;
-    }
-    return num_found;
-  }
-
-  // counting the length
-  int total_block_len = blocks - 1;
-  for (int i = 0; i < blocks; i++)
-    total_block_len += block_arr[i];
-
-  if (length < total_block_len) {
-    return num_found;
-  }
-
-  if (*block_arr > length - total_block_len) {
-    // 6 || | | |END HERE| || | | | | ||
-    // making sure there's nothing to change length
-    for (int i = 0; i < length - total_block_len; i++) {
-      if (prob_arr[i]->enable) // ignores any undecided blocks
-        continue;
-
-      if (prob_arr[i]->data) {
-        // ---------------------------- BRANCH 1 ------------------------------
-        note_branch(prob_arr, 0, *block_arr + i, length - *block_arr + i,
-                    block_arr, 1, 1);
-        num_found += solve(prob_arr, length - *block_arr + i, block_arr, 1);
-        // ---------------------------- BRANCH 2 ------------------------------
-        note_branch(prob_arr + *block_arr + 2, *block_arr + 2, 0,
-                    length - *block_arr - 1, block_arr + 1, blocks - 1, 2);
-        num_found += solve(prob_arr + block_arr[0] + 1, length - block_arr[0]
-                           - 1, block_arr + 1, blocks - 1);
-        return num_found;
-      }
-      else { // empty
-        for (int j = 0; j < i; j++) {
-          prob_arr[j]->data = 0;
-          num_found += prob_arr[j]->enable;
-          prob_arr[j]->enable = 0;
-        }
-        // constricting to beyond i.
-        // ---------------------------- BRANCH 3 ------------------------------
-        note_branch(prob_arr, i + 1, 0, length - i - 1, block_arr, blocks, 3);
-        num_found += solve(prob_arr + i + 2, length - i - 2, block_arr, blocks);
-        return num_found;
-      }
-    }
-
-    // 6 || | | | |START HERE||END HERE| | | | ||
-    // Filling in the parts that have to be full
-    for (int i = length - total_block_len; i < block_arr[0]; i++) {
-      prob_arr[i]->data = 1;
-      num_found += prob_arr[i]->enable;
-      prob_arr[i]->enable = 0;
-    }
-  }
-  else {
-    // 3||START HERE| |END HERE| | || | ||
-    for (int i = 0; i < block_arr[0]; i++) {
-      if (prob_arr[i]->enable) // skips any undecided
-        continue;
-
-      if (prob_arr[i]->data) { // other forward part, same as b4.
-        // ---------------------------- BLOCK 4 -------------------------------
-        note_branch(prob_arr, 0, length - *block_arr - i, *block_arr + i,
-                    block_arr, 1, 4);
-        num_found += solve(prob_arr, block_arr[0] + i, block_arr, 1);
-        // ---------------------------- BLOCK 5 -------------------------------
-        note_branch(prob_arr, *block_arr + 2, 0, length - *block_arr - 2,
-                    block_arr + 1, blocks - 1, 5);
-        num_found += solve(prob_arr + block_arr[0] + 2, length - block_arr[0]
-                           - 2, block_arr + 1, blocks - 1);
-        return num_found;
-      }
-      else {
-        // ---------------------------- BLOCK 6 -------------------------------
-        note_branch(prob_arr + i + 2, i + 2, 0, length - i - 2, block_arr,
-            blocks, 6);
-        num_found += solve(prob_arr + i + 2, length - i - 2, block_arr,
-                            blocks);
-         return num_found;
-      }
-    }
-  }
-
-  // 6 || | | | | || |START HERE| | |END HERE||
-  // 3 || | | |START HERE| || |END HERE||
-  // Fnding constraints to the length
-  int offset;
-  if (total_block_len > (length - block_arr[0]))
-    offset = total_block_len;
-  else
-    offset = length - block_arr[0];
-
-  for (int i = offset; i < length; i++) {
-    if ((prob_arr[i]->enable) || (blocks > 1))
-      continue;
-
-    if (prob_arr[i]->data) {
-      // ---------------------------- BLOCK 7 -------------------------------
-      note_branch(prob_arr + length - i - *block_arr, length - i - *block_arr,
-                  0, i + *block_arr, block_arr, 1, 7);
-      solve(prob_arr + length - i - *block_arr,
-            i + *block_arr, block_arr, 1);
-    }
-    else {
-      for (int j = i; j < length; j++) {
-        prob_arr[j]->data = 0;
-        num_found += prob_arr[j]->enable;
-        prob_arr[j]->enable = 0;
-      }
-      // ---------------------------- BLOCK 8 -------------------------------
-      note_branch(prob_arr, 0, i, length - i, block_arr, blocks, 8);
-      solve(prob_arr, length - i, block_arr, blocks);
-    }
-  }
-
-  if (blocks == 1)
-    return num_found;
-  // ---------------------------------- BLOCK 9 -------------------------------
-  note_branch(prob_arr + *block_arr + 1, *block_arr, 0,
-              length - *block_arr - 2, block_arr + 1, blocks - 1, 9);
-  fflush(NULL);
-  num_found += solve(prob_arr + *block_arr + 1, length - *block_arr - 1,
-                     block_arr , blocks - 1);
-  return num_found;
-}
-
-int solver_loop(int width, int height, cell_t *array[height][width],
-                block_arr_t **blocks) {
-  cell_t *prob_arr[width];
-  int curr_sum = 0;
-
-  printf("\nSTARTING ROWS\n\n");
-  //solving rows
-  for (int i = 0; i < height; i++) {
-    curr_sum += solve(array[i], width, blocks[0][i].arr, blocks[0][i].blocks);
-    note_branch(array[i], 0, 0, width, blocks[0][i].arr, blocks[0][i].blocks,
-                0);
-  }
-
-
-  printf("\nSTARTING COLUMNS\n\n");
-  //solving columns
-  for (int i = 0; i < width; i++) {
-    for (int j = 0; j < height; j++)
-      prob_arr[j] = array[i][j];
-    curr_sum += solve(prob_arr, height, blocks[1][i].arr, blocks[1][i].blocks);
-    note_branch(array[i], 0, 0, height, blocks[1][i].arr, blocks[1][i].blocks,
-                0);
-
-  }
-
-  return curr_sum;
-}
-
-int main(int argc, char *argv[]) {
-  int width, height;
-
-  char *file_name = "blocks.txt";
-
-  block_arr_t **blocks = get_block_data(file_name, &height, &width);
-  if (!blocks)
-    return -1;
-  printf("width: %d height, %d\n", width, height);
-
-  //non-temp variables
-  int prev_sum = 0;
-  cell_t array_setup[width][height]; // make setup_array thingey.
-  cell_t *array[width][height];
-
-  for (int i = 0; i < height; i++) {
-    for (int j = 0; j < width; j++) {
-      array[i][j] = &array_setup[i][j];
-      array_setup[i][j].data = 0;
-      array_setup[i][j].enable = 1;
-    }
-  }
-
-  printf("setup done!\n");
-
-  while (1) {
-    int curr_sum = solver_loop(width, height, array, blocks);
-    if (prev_sum >= curr_sum) {
-      break;
-    }
-    prev_sum = curr_sum;
-  }
-
-  return 0;
-}
