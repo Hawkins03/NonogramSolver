@@ -75,7 +75,7 @@ block_arr_t **get_block_data(char *file_name, int *width_ptr, int *height_ptr) {
     return NULL;
   }
 
-
+  // reading rows -------------------------------------------------------------
   unsigned short int buffer;
   for (int i = 0; i < height; i++) {
     buffer = 0;
