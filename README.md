@@ -71,6 +71,8 @@ algorithm wise, now I'm just working on optimizing storage requirements.
 
 
 In terms of a sense of how long this takes in total, here's a full flowchart of the program: (note, this is mainly for time calculation purposes)
+
+### THIS IS NOT ACCURATE AT THE MOMENT.
 ![](Solver-flowchart.png)
 
 ## Todo
