@@ -75,8 +75,15 @@ static int solve_row(cell_t **A, int f, int d, unsigned short int *clue,
     return 0;
 
   // loops---------------------------------------------------------------------
-  for (int i = d - offset; i < d; i++) // TODO: fix this. It's not right
-    if (!((A[i]->data) || (A[i]->enable))) min = i - offset;
+  for (int i = d - offset; i < d; i++)
+    if (!((A[i]->data) || (A[i]->enable)))
+      return num_found + solve_row(A, i - offset, d, clue, clues); //TODO: fix
+
+  for (int i = f + *clue * 2 - 1; i >= f + *clue; i--) {
+    if (i >= d) continue;
+    if (A[i]->enable) continue;
+    if (!A[i]->data) min = ((min < i - *clue) ? min : (i - *clue));
+  }
 
   if (clues == 1) {
     for (int i = f + *clue; i < d; i++) {
@@ -92,10 +99,10 @@ static int solve_row(cell_t **A, int f, int d, unsigned short int *clue,
   for (int i = f + *clue - 1; i > f; i--) {
     if (A[i]->enable) continue;
     if (A[i]->data) min = i;
-    else {
+    else if (f > 0) {
       for (int j = f; j < i; j++)
         num_found += empty_cell(A, j, d);
-      return num_found + solve_row(A, f + i + 1, d, clue, clues);
+      return num_found + solve_row(A, f + i, d, clue, clues);
     }
   }
 
