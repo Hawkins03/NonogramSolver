@@ -40,11 +40,12 @@ For example:
 
 
 ## How do I solve this puzzle?
-To solve this puzzle, I start at the main function which first calls the solve function on all the rows, and then all the columns. After that is complete, it counts all of the spaces solved, and compares that to the sum of the previous itteration. If it hasn't solved more spaces since then, we confidently know that there isn't any more progress to be made, and can confidently say that the puzzle is solved to the best of the algorithm's ability.
+To solve this puzzle, I start at the main function which first calls the solve function on all the rows, and then all the columns. After that is complete, it counts all of the new spaces solved. If that's > 0 then there is still more to do. If it hasn't solved more spaces, we confidently know that there isn't any more progress to be made, and can confidently say that the puzzle is solved to the best of the algorithm's ability.
 
 ### How does the solving function work
 The sovling function is a recursive function that tries to constrict the possible number of spaces within the current row/column, and based off of that it then marks spaces either occupied or empty. Here is a short bit of psudocode to show how the function works:
 
+TODO: UPDATE (this is not accurate at the moment)
 `
 function solver (probability_array, length, block_array, num_blocks) {
 
@@ -73,4 +74,6 @@ In terms of a sense of how long this takes in total, here's a full flowchart of 
 ![](Solver-flowchart.png)
 
 ## Todo
-- impliment a system of having a min_block and a max_block - kinda already there, but if I find a block, that becomes the max (use min values to make sure the smallest max is the end max) and move the filling block to the end. Also impliment a counting system for full blocks, and if I do fill the block / find the full block, then add an empty space directly after.
+- after recursing, empty all the cells not used.
+- fix formatting and make more effecient
+- add an actual interface
