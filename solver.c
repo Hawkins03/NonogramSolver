@@ -1,15 +1,14 @@
 #include "solver.h"
 
 static void debug_row(cell_t **prob_arr, int front_offset, int end_offset,
-                        int size, unsigned short int *block_arr, int blocks,
-                                                              int branch_num) {
+                        int size, unsigned short int *block_arr, int blocks) {
   for (int i = 0; i < blocks; i++)
     printf("%hu ", block_arr[i]);
   printf("|");
 
   for (int i = 0; i < front_offset; i++)
     printf("-");
-  for (int i = 0; i < size; i++) {
+  for (int i = 0; i < size - front_offset; i++) {
     if (prob_arr[i]->enable)
       printf("?");
     else {
@@ -23,7 +22,7 @@ static void debug_row(cell_t **prob_arr, int front_offset, int end_offset,
   for (int i = 0; i < end_offset; i++)
     printf("-");
 
-  printf("| (%d)\n", branch_num);
+  printf("|\n");
 }
 
 static int fill_cell(cell_t **A, int i, int d) {
@@ -53,19 +52,21 @@ static int empty_cell(cell_t **A, int i, int d) {
  */
 static int solve_row(cell_t **A, int f, int d, unsigned short int *clue,
                      int clues) {
-  if ((d - f <= 0) || (clues == 0) || (!A) || (d == 1))
+  printf("f: %d, d: %d ", f, d);
+  fflush(NULL);
+  if ((d - f <= 0) || (clues == 0) || (!A) || (d == 1) || (!(*clue)))
     return 0;
 
   if (d - f < *clue)
     return 0;
 
-  debug_row(A + f, f, 0, d - f, clue, clues, 0);
 
   int offset = clues - 1;
   for (int i = 0; i < clues; i++)
     offset += *(clue + i);
 
-  printf("Offset: %d, f %d, d %d\n", offset, f, d);
+  printf("Offset: %d\n", offset);
+  debug_row(A + f, f, 0, d, clue, clues);
 
   int min = d - offset;
   int max = *clue + f;
@@ -75,14 +76,16 @@ static int solve_row(cell_t **A, int f, int d, unsigned short int *clue,
     return 0;
 
   // loops---------------------------------------------------------------------
-  for (int i = d - offset; i < d; i++)
-    if (!((A[i]->data) || (A[i]->enable)))
-      return num_found + solve_row(A, i - offset, d, clue, clues); //TODO: fix
+  for (int i = d - *clue; i < d; i++) {
+    if (!((A[i]->data) || (A[i]->enable))) {
+      return num_found + solve_row(A, f, i, clue, clues);
+    }
+  }
 
   for (int i = f + *clue * 2 - 1; i >= f + *clue; i--) {
     if (i >= d) continue;
     if (A[i]->enable) continue;
-    if (!A[i]->data) min = ((min < i - *clue) ? min : (i - *clue));
+    if (!A[i]->data) min = ((min < i) ? min : i);
   }
 
   if (clues == 1) {
@@ -92,17 +95,19 @@ static int solve_row(cell_t **A, int f, int d, unsigned short int *clue,
     }
     for (int i = d - 1; i >= f + *clue; i--) {
       if (A[i]->enable) continue;
-      if (A[i]->data) min = i;
+      if (A[i]->data) min = ((min < i) ? min : i);
     }
   }
 
   for (int i = f + *clue - 1; i > f; i--) {
     if (A[i]->enable) continue;
-    if (A[i]->data) min = i;
-    else if (f > 0) {
-      for (int j = f; j < i; j++)
-        num_found += empty_cell(A, j, d);
-      return num_found + solve_row(A, f + i, d, clue, clues);
+    if (A[i]->data) min = ((min < i) ? min:i);
+    else {
+      printf("i: %d\n", i);
+      if (f > 0)
+        for (int j = f; j < i; j++)
+          num_found += empty_cell(A, j, d);
+      return num_found + solve_row(A, i + 1, d, clue, clues); // TODO: FIX
     }
   }
 
@@ -134,8 +139,8 @@ static int solve_row(cell_t **A, int f, int d, unsigned short int *clue,
     return num_found;
   }
 
-  //end PROBLEM----------------------------------------------------------------
   num_found += solve_row(A, f + *clue + 1, d, clue + 1, clues - 1);
+
   return num_found;
 }
 
@@ -153,7 +158,7 @@ int solver_loop(int width, int height, cell_t *array[height][width],
   for (int i = 0; i < height; i++) {
     curr_sum += solve_row(array[i], 0, width, blocks[0][i].arr,
                           blocks[0][i].blocks);
-    debug_row(array[i], 0, 0, width, blocks[0][i].arr, blocks[0][i].blocks, 1);
+    debug_row(array[i], 0, 0, width, blocks[0][i].arr, blocks[0][i].blocks);
     printf("\n");
   }
 
@@ -163,7 +168,7 @@ int solver_loop(int width, int height, cell_t *array[height][width],
       prob_arr[j] = array[j][i];
     curr_sum += solve_row(prob_arr, 0, height, blocks[1][i].arr,
                           blocks[1][i].blocks);
-    debug_row(prob_arr, 0, 0, height, blocks[1][i].arr, blocks[1][i].blocks, 1);
+    debug_row(prob_arr, 0, 0, height, blocks[1][i].arr, blocks[1][i].blocks);
     printf("\n");
   }
 
