@@ -15,6 +15,11 @@ typedef struct cell_struct {
   bool enable; // 0/1 = can't / can write
 } cell_t;
 
+typedef struct row_struct {
+  cell_t *row;
+  unsigned short length;
+} row_t;
+
 int solver_loop(int width, int height, cell_t *array[height][width],
                block_arr_t **blocks);
 #endif

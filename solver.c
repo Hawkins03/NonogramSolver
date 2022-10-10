@@ -26,23 +26,21 @@ static void debug_row(cell_t **prob_arr, int front_offset, int end_offset,
   printf("| (%d)\n", branch_num);
 }
 
-static int fill_cell(cell_t *cell) {
-  if (!cell)
-    return 0;
-  if (!cell->enable)
-    return 0;
-  cell->data = 1;
-  cell->enable = 0;
+static int fill_cell(cell_t **A, int i, int d) {
+  if ((!A) || (i >= d) || (i < 0)) return 0;
+  if (!A[i]) return 0;
+  if (!A[i]->enable) return 0;
+  A[i]->data = 1;
+  A[i]->enable = 0;
   return 1;
 }
 
-static int empty_cell(cell_t *cell) {
-  if (!cell)
-    return 0;
-  if (!(cell->enable))
-    return 0;
-  cell->data = 0;
-  cell->enable = 0;
+static int empty_cell(cell_t **A, int i, int d) {
+  if ((!A) || (i >= d) || (i < 0)) return 0;
+  if (!A[i]) return 0;
+  if (!(A[i]->enable)) return 0;
+  A[i]->data = 0;
+  A[i]->enable = 0;
   return 1;
 }
 
@@ -52,92 +50,85 @@ static int empty_cell(cell_t *cell) {
  * length: the length of that array (used so that I can mess with it)
  * block_arr: the array of blocks/clues for that row
  * blocks: the number of blocks in the array (again, so I can mess with it)
- *
- * how it works:
- * 1. ensure everything exists (more an insanity check than an actual one)
- * 2. find the total block length
- * 3. for the first block:
- *    a. find where it HAS to be
- *    b. fill that space
- * 4. go to the next block
  */
-static int solve_row(cell_t **A, int n,
-                     unsigned short int *clue, int clues) {
-  // setup---------------------------------------------------------------------
-  if ((n <= 0) || (clues == 0))
+static int solve_row(cell_t **A, int f, int d, unsigned short int *clue,
+                     int clues) {
+  if ((d - f <= 0) || (clues == 0) || (!A) || (d == 1))
     return 0;
 
-  debug_row(A, 0, 0, n, clue, clues, 0);
+  if (d - f < *clue)
+    return 0;
+
+  debug_row(A + f, f, 0, d - f, clue, clues, 0);
 
   int offset = clues - 1;
   for (int i = 0; i < clues; i++)
     offset += *(clue + i);
 
-  int f = n - offset;
-  int d = *clue;
+  printf("Offset: %d, f %d, d %d\n", offset, f, d);
+
+  int min = d - offset;
+  int max = *clue + f;
   int num_found = 0;
 
   if (f < 0)
     return 0;
 
-
   // loops---------------------------------------------------------------------
-  // //TODO add way to check different possibilities
+  for (int i = d - offset; i < d; i++) // TODO: fix this. It's not right
+    if (!((A[i]->data) || (A[i]->enable))) min = i - offset;
 
-  // extend the range we look for f
   if (clues == 1) {
-    for (int i = f; i >= d; i--) {
+    for (int i = f + *clue; i < d; i++) {
       if (A[i]->enable) continue;
-      if (A[i]->data) f = i;
+      if (A[i]->data) max = i + 1;
     }
-
-    for (int i = d; i < n; i++) {
+    for (int i = d - 1; i >= f + *clue; i--) {
       if (A[i]->enable) continue;
-      if (A[i]->data) d = i + 1;
+      if (A[i]->data) min = i;
     }
   }
 
-  // use filled cells to find the front (in all cases)
-  for (int i = *clue - 1; i >= 0; i--) {
+  for (int i = f + *clue - 1; i > f; i--) {
     if (A[i]->enable) continue;
-
-    if (A[i]->data)
-      f = i;
+    if (A[i]->data) min = i;
     else {
-      for (int j = 0; j < i; j++)
-        num_found += empty_cell(A[j]);
-      return num_found + solve_row(A + i + 1, n - i - 1, clue, clues);
+      for (int j = f; j < i; j++)
+        num_found += empty_cell(A, j, d);
+      return num_found + solve_row(A, f + i + 1, d, clue, clues);
     }
   }
 
-  for (int i = n - 1; i > n - *clue; i--) {
-    if (A[i]->enable) continue;
-    if (!A[i]->data)
-      return num_found + solve_row(A, n - i, clue, clues);
-  }
+  min = ((min > d - offset)?d - offset:min);
 
   //filling spaces
-  printf("%hu: %d->%d\n", *clue, f, d);
-  for (int i = f; i < d; i++)
-    num_found += fill_cell(A[i]);
+  printf("%hu: %d->%d\n", *clue, min, max);
+  for (int i = min; i < max; i++)
+    num_found += fill_cell(A, i, d);
 
-  // filling spaces where it can't be.
-  int endcap = *clue - d + f;
-  for (int i = 0; i < f - endcap; i++)
-    num_found += empty_cell(A[i]);
+  if (max - min == *clue) {
+    num_found += empty_cell(A, min - 1, d);
+    num_found += empty_cell(A, max, d);
+  }
+
+  if (f > 0)
+    return num_found + solve_row(A, f + *clue + 1, d, clue + 1, clues - 1);
+
+  //PROBLEM -------------------------------------------------------------------
+  int endcap = *clue - (max - min);
+  endcap = ((endcap > 0) ? endcap:0);
+
+  for (int i = f; i < min - endcap; i++)
+    num_found += empty_cell(A, i, d);
 
   if (clues == 1) {
-    for (int i = d + endcap; i < n; i++)
-      num_found += empty_cell(A[i]);
+    for (int i = max + endcap; i < d; i++)
+      num_found += empty_cell(A, i, d);
     return num_found;
   }
 
-
-  num_found += solve_row(A + (*clue) + 1, n - (*clue) - 1, clue + 1, clues - 1);
-
-  if (d - f == *clue)
-    num_found += empty_cell(A[f + *clue]);
-
+  //end PROBLEM----------------------------------------------------------------
+  num_found += solve_row(A, f + *clue + 1, d, clue + 1, clues - 1);
   return num_found;
 }
 
@@ -153,7 +144,7 @@ int solver_loop(int width, int height, cell_t *array[height][width],
 
   printf("\nSTARTING ROWS\n\n");
   for (int i = 0; i < height; i++) {
-    curr_sum += solve_row(array[i], width, blocks[0][i].arr,
+    curr_sum += solve_row(array[i], 0, width, blocks[0][i].arr,
                           blocks[0][i].blocks);
     debug_row(array[i], 0, 0, width, blocks[0][i].arr, blocks[0][i].blocks, 1);
     printf("\n");
@@ -163,7 +154,7 @@ int solver_loop(int width, int height, cell_t *array[height][width],
   for (int i = 0; i < width; i++) {
     for (int j = 0; j < height; j++)
       prob_arr[j] = array[j][i];
-    curr_sum += solve_row(prob_arr, height, blocks[1][i].arr,
+    curr_sum += solve_row(prob_arr, 0, height, blocks[1][i].arr,
                           blocks[1][i].blocks);
     debug_row(prob_arr, 0, 0, height, blocks[1][i].arr, blocks[1][i].blocks, 1);
     printf("\n");
@@ -173,7 +164,7 @@ int solver_loop(int width, int height, cell_t *array[height][width],
   return curr_sum;
 }
 
-int main(int argc, char *argv[]) {
+int main(int argc, char *argv[]) {// ------------------------------------------
   int width, height;
 
   char *file_name = "blocks.txt";
