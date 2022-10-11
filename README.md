@@ -76,6 +76,6 @@ In terms of a sense of how long this takes in total, here's a full flowchart of 
 ![](Solver-flowchart.png)
 
 ## Todo
-- after recursing, empty all the cells not used.
+- change into fully itterative solution
 - fix formatting and make more effecient
 - add an actual interface

@@ -82,7 +82,7 @@ static int solve_row(cell_t **A, int f, int d, unsigned short int *clue,
     }
   }
 
-  for (int i = f + *clue * 2 - 1; i >= f + *clue; i--) {
+  for (int i = f + *clue * 2 - 1; i >= f + *clue; i--) {// TODO: fix
     if (i >= d) continue;
     if (A[i]->enable) continue;
     if (!A[i]->data) min = ((min < i) ? min : i);
@@ -103,11 +103,10 @@ static int solve_row(cell_t **A, int f, int d, unsigned short int *clue,
     if (A[i]->enable) continue;
     if (A[i]->data) min = ((min < i) ? min:i);
     else {
-      printf("i: %d\n", i);
       if (f > 0)
         for (int j = f; j < i; j++)
           num_found += empty_cell(A, j, d);
-      return num_found + solve_row(A, i + 1, d, clue, clues); // TODO: FIX
+      return num_found + solve_row(A, i + 1, d, clue, clues);
     }
   }
 
