@@ -50,103 +50,99 @@ static int empty_cell(cell_t **A, int i, int d) {
  * block_arr: the array of blocks/clues for that row
  * blocks: the number of blocks in the array (again, so I can mess with it)
  */
-static int solve_row(cell_t **A, int n, unsigned short int *clue_ptr,
+static int solve_row(cell_t **A, int n, unsigned short int *clue,
                      int clues) {
-  int clue_num = 0;
-  int num_found = 0;
-
   int f = 0;
   int d = n;
 
-  while (clue_num < clues) {
-    if ((d - f < *clue_ptr + clue_num) || (!(clue_ptr + clue_num))) break;
-    unsigned short int *clue = clue_ptr + clue_num;
+  printf("f: %d, d: %d ", f, d);
+  if ((d - f <= 0) || (clues == 0) || (!A) || (d == 1) || (!(*clue)))
+    return 0;
 
-    debug_row(A + f, f, 0, d, clue_ptr, clues);
+  if (d - f < *clue)
+    return 0;
 
 
-    int offset = clues - 1 - clue_num;
-    for (int i = clue_num; i < clues; i++)
-      offset += *(clue_ptr + i);
+  int offset = clues - 1;
+  for (int i = 0; i < clues; i++)
+    offset += *(clue + i);
 
-    int min = d - offset;
-    int max = *clue + f;
+  printf("Offset: %d\n", offset);
+  debug_row(A + f, f, 0, d, clue, clues);
 
-    if (f < 0)
-      break;
 
-    // loops ------------------------------------------------------------------
-    for (int i = d - *clue; i < d; i++) {
-      if (!((A[i]->data) || (A[i]->enable))) {
-        d = i;
-        clue_num++;
-        continue;
-      }
+
+  int min = d - offset;
+  int max = *clue + f;
+  int num_found = 0;
+
+  if (f < 0)
+    return 0;
+
+  // loops---------------------------------------------------------------------
+  for (int i = d - *clue; i < d; i++) {
+    if (!((A[i]->data) || (A[i]->enable))) {
+      return num_found + solve_row(A, i, clue, clues);
     }
-
-    for (int i = f + *clue * 2 - 1; i >= f + *clue; i--) {
-      if (i >= d) continue;
-      if (A[i]->enable) continue;
-      if (!A[i]->data) min = ((min < i) ? min : i);
-    }
-
-    if (clues - clue_num == 1) {
-      for (int i = f + *clue; i < d; i++) {
-        if (A[i]->enable) continue;
-        if (A[i]->data) max = i + 1;
-      }
-      for (int i = d - 1; i >= f + *clue; i--) {
-        if (A[i]->enable) continue;
-        if (A[i]->data) min = ((min < i) ? min : i);
-      }
-    }
-
-    for (int i = f + *clue - 1; i > f; i--) {
-      if (A[i]->enable) continue;
-      if (A[i]->data) min = ((min < i) ? min:i);
-      else {
-        printf("i: %d\n", i);
-        if (f > 0)
-          for (int j = f; j < i; j++)
-            num_found += empty_cell(A, j, d);
-        f = i + 1;
-        clue_num++;
-        continue;
-      }
-    }
-
-    min = ((min > d - offset)?d - offset:min);
-
-    printf("%hu: %d->%d\n", *clue, min, max);
-    for (int i = min; i < max; i++)
-      num_found += fill_cell(A, i, d);
-
-    if (max - min == *clue) {
-      num_found += empty_cell(A, min - 1, d);
-      num_found += empty_cell(A, max, d);
-    }
-
-    if (f > 0) {
-      f += *clue + 1;
-      clue_num++;
-      continue;
-    }
-
-    int endcap = *clue - (max - min);
-    endcap = ((endcap > 0) ? endcap:0);
-
-    for (int i = f; i < min - endcap; i++)
-      num_found += empty_cell(A, i, d);
-
-    if (clues - clue_num == 1) {
-      for (int i = max + endcap; i < d; i++)
-        num_found += empty_cell(A, i, d);
-      return num_found;
-    }
-
-    f += *clue + 1;
-    clue_num++;
   }
+
+  for (int i = f + *clue * 2 - 1; i >= f + *clue; i--) {
+    if (i >= d) continue;
+    if (A[i]->enable) continue;
+    if (!A[i]->data) min = ((min < i) ? min : i);
+  }
+
+  if (clues == 1) {
+    for (int i = f + *clue; i < d; i++) {
+      if (A[i]->enable) continue;
+      if (A[i]->data) max = i + 1;
+    }
+    for (int i = d - 1; i >= f + *clue; i--) {
+      if (A[i]->enable) continue;
+      if (A[i]->data) min = ((min < i) ? min : i);
+    }
+  }
+
+  for (int i = f + *clue - 1; i > f; i--) {
+    if (A[i]->enable) continue;
+    if (A[i]->data) min = ((min < i) ? min:i);
+    else {
+      printf("i: %d\n", i);
+      if (f > 0)
+        for (int j = f; j < i; j++)
+          num_found += empty_cell(A, j, d);
+      // reset loop to f = i + 1
+    }
+  }
+
+  min = ((min > d - offset)?d - offset:min);
+
+  //filling spaces
+  printf("%hu: %d->%d\n", *clue, min, max);
+  for (int i = min; i < max; i++)
+    num_found += fill_cell(A, i, d);
+
+  if (max - min == *clue) {
+    num_found += empty_cell(A, min - 1, d);
+    num_found += empty_cell(A, max, d);
+  }
+
+  // if (f > 0)
+    // reset to f = *clue + 1, clue += 1
+
+  int endcap = *clue - (max - min);
+  endcap = ((endcap > 0) ? endcap:0);
+
+  for (int i = f; i < min - endcap; i++)
+    num_found += empty_cell(A, i, d);
+
+  if (clues == 1) {
+    for (int i = max + endcap; i < d; i++)
+      num_found += empty_cell(A, i, d);
+    return num_found;
+  }
+
+  //reset to f + *clue + 1, clue += 1.
 
   return num_found;
 }
@@ -163,7 +159,7 @@ int solver_loop(int width, int height, cell_t *array[height][width],
 
   printf("\nSTARTING ROWS\n\n");
   for (int i = 0; i < height; i++) {
-    curr_sum += solve_row(array[i], width, blocks[0][i].arr,
+    curr_sum += solve_row(array[i], 0, width, blocks[0][i].arr,
                           blocks[0][i].blocks);
     debug_row(array[i], 0, 0, width, blocks[0][i].arr, blocks[0][i].blocks);
     printf("\n");
@@ -173,7 +169,7 @@ int solver_loop(int width, int height, cell_t *array[height][width],
   for (int i = 0; i < width; i++) {
     for (int j = 0; j < height; j++)
       prob_arr[j] = array[j][i];
-    curr_sum += solve_row(prob_arr, height, blocks[1][i].arr,
+    curr_sum += solve_row(prob_arr, 0, height, blocks[1][i].arr,
                           blocks[1][i].blocks);
     debug_row(prob_arr, 0, 0, height, blocks[1][i].arr, blocks[1][i].blocks);
     printf("\n");
