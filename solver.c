@@ -53,7 +53,8 @@ static int empty_cell(cell_t **A, int i, int d) {
 static int solve_row(cell_t **A, int n, unsigned short int *clue_ptr,
                      int clues) {
   int clue_num = 0;
-  int num_found = 0;
+  int empty_cells = 0;
+  int full_cells = 0;
 
   int f = 0;
   int d = n;
@@ -79,7 +80,6 @@ static int solve_row(cell_t **A, int n, unsigned short int *clue_ptr,
     for (int i = d - *clue; i < d; i++) {
       if (!((A[i]->data) || (A[i]->enable))) {
         d = i;
-        clue_num++;
         continue;
       }
     }
@@ -90,27 +90,29 @@ static int solve_row(cell_t **A, int n, unsigned short int *clue_ptr,
       if (!A[i]->data) min = ((min < i) ? min : i);
     }
 
+    /* TODO: fix this part. It's not working atm when f + clue = d
+     * i.e. 9|.XXXXXXXX?|
+     */
     if (clues - clue_num == 1) {
-      for (int i = f + *clue; i < d; i++) {
+      for (int i = f + *clue - 1; i < d; i++) {
         if (A[i]->enable) continue;
-        if (A[i]->data) max = i + 1;
+        if (A[i]->data) max = ((max > i + 1) ? max : i + 1);
       }
-      for (int i = d - 1; i >= f + *clue; i--) {
+      for (int i = d - 1; i >= f + *clue - 1; i--) {
         if (A[i]->enable) continue;
         if (A[i]->data) min = ((min < i) ? min : i);
       }
     }
 
-    for (int i = f + *clue - 1; i > f; i--) {
+    for (int i = f + *clue - 1; i >= f; i--) {
       if (A[i]->enable) continue;
-      if (A[i]->data) min = ((min < i) ? min:i);
+      if (A[i]->data) min = ((min < i) ? min : i);
       else {
         printf("i: %d\n", i);
         if (f > 0)
           for (int j = f; j < i; j++)
-            num_found += empty_cell(A, j, d);
+            empty_cells += empty_cell(A, j, d);
         f = i + 1;
-        clue_num++;
         continue;
       }
     }
@@ -119,11 +121,11 @@ static int solve_row(cell_t **A, int n, unsigned short int *clue_ptr,
 
     printf("%hu: %d->%d\n", *clue, min, max);
     for (int i = min; i < max; i++)
-      num_found += fill_cell(A, i, d);
+      full_cells += fill_cell(A, i, d);
 
     if (max - min == *clue) {
-      num_found += empty_cell(A, min - 1, d);
-      num_found += empty_cell(A, max, d);
+      empty_cells += empty_cell(A, min - 1, d);
+      empty_cells += empty_cell(A, max, d);
     }
 
     if (f > 0) {
@@ -136,19 +138,18 @@ static int solve_row(cell_t **A, int n, unsigned short int *clue_ptr,
     endcap = ((endcap > 0) ? endcap:0);
 
     for (int i = f; i < min - endcap; i++)
-      num_found += empty_cell(A, i, d);
+      empty_cells += empty_cell(A, i, d);
 
     if (clues - clue_num == 1) {
       for (int i = max + endcap; i < d; i++)
-        num_found += empty_cell(A, i, d);
-      return num_found;
+        empty_cells += empty_cell(A, i, d);
     }
 
     f += *clue + 1;
     clue_num++;
   }
 
-  return num_found;
+  return empty_cells + full_cells;
 }
 
 /*
