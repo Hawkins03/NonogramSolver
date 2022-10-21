@@ -1,5 +1,6 @@
 #include "solver.h"
 
+
 static void debug_row(cell_t **prob_arr, int front_offset, int end_offset,
                         int size, unsigned short int *block_arr, int blocks) {
   for (int i = 0; i < blocks; i++)
@@ -77,24 +78,41 @@ static int solve_row(cell_t **A, int n, unsigned short int *clue_ptr,
       break;
 
     // loops ------------------------------------------------------------------
+
+    // check end for empty blocks
     for (int i = d - *clue; i < d; i++) {
       if (!((A[i]->data) || (A[i]->enable))) {
-        d = i;
-        continue;
+        return solve_row(A, i, clue_ptr, clues);
       }
     }
 
+    // check for limiters on clue
     for (int i = f + *clue * 2 - 1; i >= f + *clue; i--) {
       if (i >= d) continue;
       if (A[i]->enable) continue;
       if (!A[i]->data) min = ((min < i) ? min : i);
     }
 
+    //check clue area for limiters
+    for (int i = f + *clue - 1; i >= f; i--) {
+      if (A[i]->enable) continue;
+      if (A[i]->data) min = ((min < i) ? min : i);
+      else { // empty cells = move f forward
+        printf("i: %d\n", i);
+        if (f > 0)
+          for (int j = f; j < i; j++)
+            empty_cells += empty_cell(A, j, d);
+        solve_row(A + i + 1, d - i - 1, clue_ptr, clues); // TODO: NEEDS WORK
+        break;
+      }
+    }
+
     /* TODO: fix this part. It's not working atm when f + clue = d
      * i.e. 9|.XXXXXXXX?|
+     * EDIT: I don't think it's this one
      */
     if (clues - clue_num == 1) {
-      for (int i = f + *clue - 1; i < d; i++) {
+      for (int i = f + *clue; i < d; i++) {
         if (A[i]->enable) continue;
         if (A[i]->data) max = ((max > i + 1) ? max : i + 1);
       }
@@ -104,18 +122,6 @@ static int solve_row(cell_t **A, int n, unsigned short int *clue_ptr,
       }
     }
 
-    for (int i = f + *clue - 1; i >= f; i--) {
-      if (A[i]->enable) continue;
-      if (A[i]->data) min = ((min < i) ? min : i);
-      else {
-        printf("i: %d\n", i);
-        if (f > 0)
-          for (int j = f; j < i; j++)
-            empty_cells += empty_cell(A, j, d);
-        f = i + 1;
-        continue;
-      }
-    }
 
     min = ((min > d - offset)?d - offset:min);
 
@@ -229,6 +235,4 @@ int main(int argc, char *argv[]) {// ------------------------------------------
   return 0;
 }
 
-/*
-*/
 
