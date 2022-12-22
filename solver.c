@@ -62,10 +62,10 @@ static int empty_cell(cell_t **A, int i, int d) {
  *       (max - *clue, max] shrink search area
  *      d. use a bubble sot(ish) method to figure out when to stop this loop
  *    3. fill [min, max]
+ *      a. add endcaps if max-min = *clue
  *    4. if # clues = 1, empty all unreachable spaces. (then exit solve_row)
  *      a. if there are more clues, then only do so for cells before, not after
- *    5. add endcaps if max-min = *clue
- *    6. go to the next block
+ *    5. go to the next block
  *      a. if max-min = *clue, f += max + 2
  *      b. else, f = f + *clue + 1
  *
@@ -86,6 +86,7 @@ static int solve_row(cell_t **A, int n, unsigned short int *clue_ptr,
     // TODO: Check the edge cases on this line \/
     if ((d - f < *clue_ptr + clue_num) || (!(clue_ptr + clue_num))) break;
 
+    // 1. calculate offset and set barriers
     unsigned short int *clue = clue_ptr + clue_num;
     print_row(A + f, f, 0, d, clue_ptr, clues);
 
@@ -99,7 +100,8 @@ static int solve_row(cell_t **A, int n, unsigned short int *clue_ptr,
     if (f < 0) // Insanity checking
       break;
 
-    // loops ------------------------------------------------------------------
+    // 2. itterativly shrink said barriars (all of the following will need to
+    //    be updated)
 
     // check end for empty blocks
     for (int i = d - *clue; i < d; i++) {
@@ -144,18 +146,20 @@ static int solve_row(cell_t **A, int n, unsigned short int *clue_ptr,
       }
     }
 
-
+    // step 3. Fill from min -> max
     min = ((min > d - offset)?d - offset:min);
 
     printf("%hu: %d->%d\n", *clue, min, max);
     for (int i = min; i < max; i++)
       full_cells += fill_cell(A, i, d);
 
+    // step 3a. add endcaps
     if (max - min == *clue) {
       empty_cells += empty_cell(A, min - 1, d);
       empty_cells += empty_cell(A, max, d);
     }
 
+    // step 4.
     if (f > 0) {
       f += *clue + 1;
       clue_num++;
@@ -173,6 +177,7 @@ static int solve_row(cell_t **A, int n, unsigned short int *clue_ptr,
         empty_cells += empty_cell(A, i, d);
     }
 
+    // step 5.
     f += *clue + 1;
     clue_num++;
   }
