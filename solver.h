@@ -12,7 +12,7 @@
 
 typedef struct cell_struct {
   bool data; // 0/1 = empty / full
-  bool enable; // 0/1 = can't / can write
+  bool enable; // 0/1 = write enabled / write disabled (like registers)
 } cell_t;
 
 typedef struct row_struct {
