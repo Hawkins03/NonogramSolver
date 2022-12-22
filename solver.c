@@ -60,7 +60,6 @@ static int empty_cell(cell_t **A, int i, int d) {
  *       (shrink search area)
  *      c. if there's an empty cell in the range [min, min + *clue) or
  *       (max - *clue, max] shrink search area
- *      d. use a bubble sot(ish) method to figure out when to stop this loop
  *    3. fill [min, max]
  *      a. add endcaps if max-min = *clue
  *    4. if # clues = 1, empty all unreachable spaces. (then exit solve_row)
@@ -82,54 +81,92 @@ static int solve_row(cell_t **A, int n, unsigned short int *clue_ptr,
   int f = 0;
   int d = n;
 
+  // step 4 (early)
+  for (int i = d - *clue_ptr + clues - 1; i < d; i++) {
+    if (!((A[i]->data) || (A[i]->enable))) { // not X, not write enabled
+      for (int j = i; i < d; i++)
+        empty_cell(A, j, d);
+      return solve_row(A, i, clue_ptr, clues);
+    }
+  }
+
+
   while (clue_num < clues) {    // per clue
     // TODO: Check the edge cases on this line \/
     if ((d - f < *clue_ptr + clue_num) || (!(clue_ptr + clue_num))) break;
 
-    // 1. calculate offset and set barriers
+    // printing row
     unsigned short int *clue = clue_ptr + clue_num;
     print_row(A + f, f, 0, d, clue_ptr, clues);
 
+    // calculating offset
     int offset = clues - 1 - clue_num;
     for (int i = clue_num; i < clues; i++)
       offset += *(clue_ptr + i);
 
+    // marking upper and lower bounds for the search
+    int upper = d - offset;
+    int lower = f;
+
+    // clue must be in [min,max)
     int min = d - offset;
     int max = *clue + f;
 
     if (f < 0) // Insanity checking
       break;
 
+    bool repeat = false;
     // 2. itterativly shrink said barriars (all of the following will need to
     //    be updated)
+    do {
+      bool updated = false;
 
-    // check end for empty blocks
-    for (int i = d - *clue; i < d; i++) {
-      if (!((A[i]->data) || (A[i]->enable))) { // not X, not write enabled
-        return solve_row(A, i, clue_ptr, clues);
+      // a. check for full cells from [f, f + *clue]
+      for (int i = lower + *clue; i >= lower; i--) {
+        if ((A[i]->data) && (!(A[i]->enable))) {
+          repeat = true;
+          min = i;
+          if (!updated) {
+            max = i;
+            upper = i + *clue;
+            updated = true;
+          }
+        }
       }
-    }
 
-    // TODO: This has no significance, it needs to be rewritten
-    for (int i = f + *clue * 2 - 1; i >= f + *clue; i--) {
-      if (i >= d) continue;
-      if (A[i]->enable) continue;
-      if (!A[i]->data) min = ((min < i) ? min : i);
-    }
-
-    //check clue area for limiters
-    for (int i = f + *clue - 1; i >= f; i--) {
-      if (A[i]->enable) continue;
-      if (A[i]->data) min = ((min < i) ? min : i);
-      else { // empty cells = move f forward
-        printf("i: %d\n", i);
-        if (f > 0)
-          for (int j = f; j < i; j++)
-            empty_cells += empty_cell(A, j, d);
-        solve_row(A + i + 1, d - i - 1, clue_ptr, clues); //TODO: NEEDS WORK
-        break;
+      // b. check for empty cells from [f, f + *clue)
+      for (int i = f + *clue - 1; i >= f; i--) {
+        if (!((A[i]->data) || (A[i]->enable))) {
+          repeat = true;
+          lower += i;
+          // update min / max
+          break;
+        }
       }
+
+      // c. check for empty cells from (min - *clue, min]
+      for (int i = upper - *clue; i < upper; i++) {
+        if (!((A[i]->data) || (A[i]->enable))) {
+          upper = i;
+          // update min / max
+          repeat = true;
+          break;
+        }
+      }
+    } while (repeat);
+
+    // step 3.
+    printf("%hu: %d->%d\n", *clue, min, max);
+    for (int i = min; i < max; i++)
+      full_cells += fill_cell(A, i, d);
+
+    // step 3a. add endcaps
+    if (max - min == *clue) {
+      empty_cells += empty_cell(A, min - 1, d);
+      empty_cells += empty_cell(A, max, d);
     }
+
+    // step 4. (don't touch for now)
 
     /* TODO: fix this part. It's not working atm when f + clue = d
      * i.e. 9|.XXXXXXXX?|
@@ -146,20 +183,6 @@ static int solve_row(cell_t **A, int n, unsigned short int *clue_ptr,
       }
     }
 
-    // step 3. Fill from min -> max
-    min = ((min > d - offset)?d - offset:min);
-
-    printf("%hu: %d->%d\n", *clue, min, max);
-    for (int i = min; i < max; i++)
-      full_cells += fill_cell(A, i, d);
-
-    // step 3a. add endcaps
-    if (max - min == *clue) {
-      empty_cells += empty_cell(A, min - 1, d);
-      empty_cells += empty_cell(A, max, d);
-    }
-
-    // step 4.
     if (f > 0) {
       f += *clue + 1;
       clue_num++;
