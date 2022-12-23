@@ -120,9 +120,10 @@ static int solve_row(cell_t **A, int n, unsigned short int *clue_ptr,
     //    be updated)
     do {
       bool updated = false;
+      int i;
 
       // a. check for full cells from [f, f + *clue]
-      for (int i = lower + *clue; i >= lower; i--) {
+      for (i = lower + *clue; i >= lower; i--) {
         if ((A[i]->data) && (!(A[i]->enable))) {
           repeat = true;
           min = i;
@@ -135,11 +136,11 @@ static int solve_row(cell_t **A, int n, unsigned short int *clue_ptr,
       }
 
       // b. check for empty cells from [f, f + *clue)
-      for (int i = f + *clue - 1; i >= f; i--) {
+      for (i = lower + *clue - 1; i >= lower; i--) {
         if (!((A[i]->data) || (A[i]->enable))) {
           repeat = true;
-          lower += i;
-          // update min / max
+          max += i - lower + 1;
+          lower = i + 1;
           break;
         }
       }
@@ -147,8 +148,8 @@ static int solve_row(cell_t **A, int n, unsigned short int *clue_ptr,
       // c. check for empty cells from (min - *clue, min]
       for (int i = upper - *clue; i < upper; i++) {
         if (!((A[i]->data) || (A[i]->enable))) {
-          upper = i;
-          // update min / max
+          min -= upper - i + 1;
+          upper = i + 1;
           repeat = true;
           break;
         }
