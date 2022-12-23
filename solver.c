@@ -156,6 +156,20 @@ static int solve_row(cell_t **A, int n, unsigned short int *clue_ptr,
       }
     } while (repeat);
 
+    //be careful of this part, could probs be error part
+    //if last clue, just searches everywhere... wait
+    //TODO: double check that this has the right cutoffs
+    if (clues - clue_num == 1) {
+      for (int i = f + *clue; i < d; i++) {
+        if (A[i]->enable) continue;
+        if (A[i]->data) max = ((max > i + 1) ? max : i + 1);
+      }
+      for (int i = d - 1; i >= f; i--) {
+        if (A[i]->enable) continue;
+        if (A[i]->data) min = ((min < i) ? min : i);
+      }
+    }
+
     // step 3.
     printf("%hu: %d->%d\n", *clue, min, max);
     for (int i = min; i < max; i++)
@@ -167,43 +181,28 @@ static int solve_row(cell_t **A, int n, unsigned short int *clue_ptr,
       empty_cells += empty_cell(A, max, d);
     }
 
-    // step 4. (don't touch for now)
-
-    /* TODO: fix this part. It's not working atm when f + clue = d
-     * i.e. 9|.XXXXXXXX?|
-     * EDIT: I don't think it's this one
-     */
-    if (clues - clue_num == 1) {
-      for (int i = f + *clue; i < d; i++) {
-        if (A[i]->enable) continue;
-        if (A[i]->data) max = ((max > i + 1) ? max : i + 1);
-      }
-      for (int i = d - 1; i >= f + *clue - 1; i--) {
-        if (A[i]->enable) continue;
-        if (A[i]->data) min = ((min < i) ? min : i);
-      }
-    }
-
-    if (f > 0) {
+    if (f > 0) {// cuts off any beyond the first clue
       f += *clue + 1;
       clue_num++;
       continue;
     }
 
-    int endcap = *clue - (max - min);
-    endcap = ((endcap > 0) ? endcap:0);
+    // could just go positive if min > max (which we don't want)
+    // TODO: fix this MASSIVE bug that seems to be here.
 
-    for (int i = f; i < min - endcap; i++)
+    for (int i = f; i < lower; i++)
       empty_cells += empty_cell(A, i, d);
 
-    if (clues - clue_num == 1) {
-      for (int i = max + endcap; i < d; i++)
+    if (clues - clue_num == 1)
+      for (int i = upper; i < d; i++)
         empty_cells += empty_cell(A, i, d);
-    }
 
-    // step 5.
-    f += *clue + 1;
+    // step 5
     clue_num++;
+    if (max - min == *clue)
+      f = max + 2;
+    else
+      f += *clue + 1;
   }
 
   return empty_cells + full_cells;
