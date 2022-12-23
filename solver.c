@@ -81,8 +81,8 @@ static int solve_row(cell_t **A, int n, unsigned short int *clue_ptr,
   int f = 0;
   int d = n;
 
-  // step 4 (early)
-  for (int i = d - *clue_ptr + clues - 1; i < d; i++) {
+  // check nothing is blocking last clue
+  for (int i = d - *(clue_ptr + clues - 1); i < d; i++) {
     if (!((A[i]->data) || (A[i]->enable))) { // not X, not write enabled
       for (int j = i; i < d; i++)
         empty_cell(A, j, d);
@@ -90,13 +90,22 @@ static int solve_row(cell_t **A, int n, unsigned short int *clue_ptr,
     }
   }
 
+  // check nothing is blocking first clue
+  for (int i = f + *(clue_ptr + clues - 1); i >= f; i--) {
+    if ((!(A[i]->data) || (A[i]-> enable))) {
+      for (int j = i; j > d; j--)
+        empty_cell(A, j, d);
+      return solve_row(A + i + 1, d - i - 1, clue_ptr, clues);
+    }
+  }
 
-  while (clue_num < clues) {    // per clue
-    // TODO: Check the edge cases on this line \/
-    if ((d - f < *clue_ptr + clue_num) || (!(clue_ptr + clue_num))) break;
+  while (clue_num < clues) {
+    unsigned short int *clue = clue_ptr + clue_num;
+    // insanity check
+    // TODO: double check clue is set up correctly and I didn't break anything
+    if ((d - f < *clue) || (!clue)) break;
 
     // printing row
-    unsigned short int *clue = clue_ptr + clue_num;
     print_row(A + f, f, 0, d, clue_ptr, clues);
 
     // calculating offset
@@ -115,50 +124,53 @@ static int solve_row(cell_t **A, int n, unsigned short int *clue_ptr,
     if (f < 0) // Insanity checking
       break;
 
-    bool repeat = false;
+    bool repeat;
     // 2. itterativly shrink said barriars (all of the following will need to
     //    be updated)
+    // TODO: vigerously check that this works
     do {
-      bool updated = false;
-      int i;
+      repeat = false;
 
-      // a. check for full cells from [f, f + *clue]
-      for (i = lower + *clue; i >= lower; i--) {
-        if ((A[i]->data) && (!(A[i]->enable))) {
+      // b. check for empty cells from [lower, lower + *clue)
+      for (int i = lower + *clue - 1; i >= lower; i--) {
+        if (!((A[i]->data) || (A[i]->enable))) { // empty cell
           repeat = true;
-          min = i;
-          if (!updated) {
-            max = i;
-            upper = i + *clue;
-            updated = true;
-          }
-        }
-      }
-
-      // b. check for empty cells from [f, f + *clue)
-      for (i = lower + *clue - 1; i >= lower; i--) {
-        if (!((A[i]->data) || (A[i]->enable))) {
-          repeat = true;
-          max += i - lower + 1;
+          max -= i - lower + 1;
           lower = i + 1;
           break;
         }
       }
 
-      // c. check for empty cells from (min - *clue, min]
+      // c. check for empty cells from (upper - *clue, upper]
       for (int i = upper - *clue; i < upper; i++) {
-        if (!((A[i]->data) || (A[i]->enable))) {
-          min -= upper - i + 1;
-          upper = i + 1;
+        if (!((A[i]->data) || (A[i]->enable))) { // empty cell
           repeat = true;
+          min -= upper - i + 1;
+          upper = i - 1;
           break;
+        }
+      }
+
+      // last bc it trumps steps b & c, reminder that loop over same thing
+      // a. check for full cells from [f, f + *clue]
+      for (int i = lower + *clue; i >= lower; i--) {
+        if ((A[i]->data) && (!(A[i]->enable))) {
+          repeat = true;
+          min = i;
+        }
+      }
+      for (int i = lower; i <= lower + *clue; i--) {
+        if ((A[i]->data) && (!(A[i]->enable))) {
+          repeat = true;
+          max = i;
+          upper = (upper < i + *clue) ? upper : i + *clue;
         }
       }
     } while (repeat);
 
     //be careful of this part, could probs be error part
     //if last clue, just searches everywhere... wait
-    //TODO: double check that this has the right cutoffs
+    //TODO: double check that this has the right cutoffs I don't trust it
     if (clues - clue_num == 1) {
       for (int i = f + *clue; i < d; i++) {
         if (A[i]->enable) continue;
@@ -204,6 +216,9 @@ static int solve_row(cell_t **A, int n, unsigned short int *clue_ptr,
     else
       f += *clue + 1;
   }
+
+  // if all clues filled, make all cells empty
+  // if all empty cells filled, make all cells full
 
   return empty_cells + full_cells;
 }
