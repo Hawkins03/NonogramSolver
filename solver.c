@@ -94,7 +94,6 @@ static int solve_row(cell_t **A, int n, unsigned short int *clue_ptr,
 
   // check nothing is blocking first clue
   for (int i = f + *(clue_ptr + clues - 1); ((i >= f) && (i < d)); i--) {
-    printf("i: %d\n", i);
     if (!((A[i]->data) || (A[i]->enable))) { // error?
       for (int j = i; j > d; j--)
         empty_cell(A, j, d);
@@ -104,17 +103,18 @@ static int solve_row(cell_t **A, int n, unsigned short int *clue_ptr,
 
   while (clue_num < clues) {
     unsigned short int *clue = clue_ptr + clue_num;
+    //printf("clue: %d ", *clue);
+
     // insanity check
     // TODO: double check clue is set up correctly and I didn't break anything
     if ((d - f < *clue) || (!clue)) break;
-
-    // printing row
-    print_row(A + f, f, 0, d, clue_ptr, clues);
 
     // calculating offset
     int offset = clues - 1 - clue_num;
     for (int i = clue_num; i < clues; i++)
       offset += *(clue_ptr + i);
+
+    //printf("Offset: %d\n", offset);
 
     // marking upper and lower bounds for the search
     int upper = d - offset;
@@ -127,13 +127,17 @@ static int solve_row(cell_t **A, int n, unsigned short int *clue_ptr,
     if (f < 0) // Insanity checking
       break;
 
+    //printf("Lower: %d, Upper: %d, min: %d, max: %d, ", lower, upper, min, max);
+    // printing row
+    print_row(A + f, f, 0, d, clue_ptr, clues);
+
+
     bool repeat;
     // 2. itterativly shrink said barriars (all of the following will need to
     //    be updated)
     // TODO: vigerously check that this works
     do {
       repeat = false;
-
       // b. check for empty cells from [lower, lower + *clue)
       for (int i = lower + *clue - 1; i >= lower; i--) {
         if (!((A[i]->data) || (A[i]->enable))) { // empty cell
@@ -157,12 +161,13 @@ static int solve_row(cell_t **A, int n, unsigned short int *clue_ptr,
       // last bc it trumps steps b & c, reminder that loop over same thing
       // a. check for full cells from [f, f + *clue]
       for (int i = lower + *clue; i >= lower; i--) {
-        if ((A[i]->data) && (!(A[i]->enable))) {
+        if ((A[i]->data) && (!(A[i]->enable))) { // 4 --???XXX| = inf loop...
           repeat = true;
           min = i;
         }
       }
-      for (int i = lower; i <= lower + *clue; i--) {
+      for (int i = lower; (i <= lower + *clue) && (i < d); i++) {
+        //printf("i = %d, lower = %d\n", i, lower);
         if ((A[i]->data) && (!(A[i]->enable))) {
           repeat = true;
           max = i;
@@ -186,7 +191,7 @@ static int solve_row(cell_t **A, int n, unsigned short int *clue_ptr,
     }
 
     // step 3.
-    printf("%hu: %d->%d\n", *clue, min, max);
+    //printf("%hu: %d->%d\n", *clue, min, max);
     for (int i = min; i < max; i++)
       full_cells += fill_cell(A, i, d);
 
@@ -195,6 +200,7 @@ static int solve_row(cell_t **A, int n, unsigned short int *clue_ptr,
       empty_cells += empty_cell(A, min - 1, d);
       empty_cells += empty_cell(A, max, d);
     }
+    printf("min: %d, max: %d\n", min, max);
 
     if (f > 0) {// cuts off any beyond the first clue
       f += *clue + 1;
@@ -208,9 +214,16 @@ static int solve_row(cell_t **A, int n, unsigned short int *clue_ptr,
     for (int i = f; i < lower; i++)
       empty_cells += empty_cell(A, i, d);
 
+    printf("A[9]: (%d, %d)\n", A[9]->data, A[9]->enable);
+
+    /*
+     * I have no idea what the hell this line does. It shouldn't really be here
     if (clues - clue_num == 1)
       for (int i = upper; i < d; i++)
         empty_cells += empty_cell(A, i, d);
+    */
+
+    printf("A[9]: (%d, %d)\n", A[9]->data, A[9]->enable);
 
     // step 5
     clue_num++;
@@ -218,6 +231,8 @@ static int solve_row(cell_t **A, int n, unsigned short int *clue_ptr,
       f = max + 2;
     else
       f += *clue + 1;
+
+    printf("A[9]: (%d, %d)\n", A[9]->data, A[9]->enable);
   }
 
   // if all clues filled, make all cells empty
