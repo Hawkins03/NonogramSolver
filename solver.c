@@ -81,6 +81,8 @@ static int solve_row(cell_t **A, int n, unsigned short int *clue_ptr,
   int f = 0;
   int d = n;
 
+  print_row(A, 0, 0, n, clue_ptr, clues);
+
   // check nothing is blocking last clue
   for (int i = d - *(clue_ptr + clues - 1); i < d; i++) {
     if (!((A[i]->data) || (A[i]->enable))) { // not X, not write enabled
@@ -91,8 +93,9 @@ static int solve_row(cell_t **A, int n, unsigned short int *clue_ptr,
   }
 
   // check nothing is blocking first clue
-  for (int i = f + *(clue_ptr + clues - 1); i >= f; i--) {
-    if ((!(A[i]->data) || (A[i]-> enable))) {
+  for (int i = f + *(clue_ptr + clues - 1); ((i >= f) && (i < d)); i--) {
+    printf("i: %d\n", i);
+    if (!((A[i]->data) || (A[i]->enable))) { // error?
       for (int j = i; j > d; j--)
         empty_cell(A, j, d);
       return solve_row(A + i + 1, d - i - 1, clue_ptr, clues);
