@@ -71,6 +71,13 @@ static int empty_cell(cell_t **A, int i, int d) {
  * Notes:
  * f, min are [ (at index, so use >=)
  * d, max are ) (1 beyond end, so use <)
+ *
+ *
+ * TODO: Need to solidify the recursion otherwise it could cause an infinite
+ * loop. I believe a good solution would be to impliment an array at the clue
+ * level. This could be used to remove non-viable locations and could be used
+ * to make things much easier.
+ *
  */
 static int solve_row(cell_t **A, int n, unsigned short int *clue_ptr,
                      int clues) {
@@ -102,6 +109,11 @@ static int solve_row(cell_t **A, int n, unsigned short int *clue_ptr,
   }
 
   while (clue_num < clues) {
+    bool viable[n]; // holds viable search locations (if full or empty, not viable.)
+
+    for (int i = 0; i < n; i++)
+      viable[i] = !(A[i]->enable);
+
     unsigned short int *clue = clue_ptr + clue_num;
     //printf("clue: %d ", *clue);
 
@@ -119,6 +131,12 @@ static int solve_row(cell_t **A, int n, unsigned short int *clue_ptr,
     // marking upper and lower bounds for the search
     int upper = d - offset;
     int lower = f;
+
+    for (int i = 0; i < f; i++)
+      viable[i] = false;
+
+    for (int i = upper; i < n; i++)
+      viable[i] = false;
 
     // clue must be in [min,max)
     int min = d - offset;
@@ -160,8 +178,12 @@ static int solve_row(cell_t **A, int n, unsigned short int *clue_ptr,
 
       // last bc it trumps steps b & c, reminder that loop over same thing
       // a. check for full cells from [f, f + *clue]
+      //
+      // inf loop: --???XXX|
+      // need base case.
+      // need to search the surrouning cells for additional full cells
       for (int i = lower + *clue; i >= lower; i--) {
-        if ((A[i]->data) && (!(A[i]->enable))) { // 4 --???XXX| = inf loop...
+        if ((A[i]->data) && (!(A[i]->enable))) {
           repeat = true;
           min = i;
         }
