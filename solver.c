@@ -1,15 +1,16 @@
 #include "solver.h"
 
 
-static void print_row(cell_t **prob_arr, int front_offset, int end_offset,
-                        int size, unsigned short int *block_arr, int blocks) {
+static void print_row(cell_t **prob_arr, int f, int size,
+                      unsigned short int *block_arr, int blocks) {
+  if (f < 0) f = 0;
   for (int i = 0; i < blocks; i++)
     printf("%hu ", block_arr[i]);
   printf("|");
 
-  for (int i = 0; i < front_offset; i++)
+  for (int i = 0; i < f; i++)
     printf("-");
-  for (int i = 0; i < size - front_offset; i++) {
+  for (int i = f; i < size; i++) {
     if (prob_arr[i]->enable)
       printf("?");
     else {
@@ -19,9 +20,6 @@ static void print_row(cell_t **prob_arr, int front_offset, int end_offset,
         printf(".");
     }
   }
-
-  for (int i = 0; i < end_offset; i++)
-    printf("-");
 
   printf("|\n");
 }
@@ -88,12 +86,12 @@ static int solve_row(cell_t **A, int n, unsigned short int *clue_ptr,
   int f = 0;
   int d = n;
 
-  print_row(A, 0, 0, n, clue_ptr, clues);
+  print_row(A, 0, n, clue_ptr, clues); // TODO: massive loop here
 
   // check nothing is blocking last clue
   for (int i = d - *(clue_ptr + clues - 1); i < d; i++) {
     if (!((A[i]->data) || (A[i]->enable))) { // not X, not write enabled
-      for (int j = i; i < d; i++)
+      for (int j = i; j < d; j++)
         empty_cell(A, j, d);
       return solve_row(A, i, clue_ptr, clues);
     }
@@ -111,9 +109,6 @@ static int solve_row(cell_t **A, int n, unsigned short int *clue_ptr,
   while (clue_num < clues) {
     bool viable[n]; // holds viable search locations (if full or empty, not viable.)
 
-    for (int i = 0; i < n; i++)
-      viable[i] = !(A[i]->enable);
-
     unsigned short int *clue = clue_ptr + clue_num;
     //printf("clue: %d ", *clue);
 
@@ -129,36 +124,48 @@ static int solve_row(cell_t **A, int n, unsigned short int *clue_ptr,
     //printf("Offset: %d\n", offset);
 
     // marking upper and lower bounds for the search
-    int upper = d - offset;
+    int upper = d - offset; // TODO: edit to give better context.
     int lower = f;
 
-    for (int i = 0; i < f; i++)
-      viable[i] = false;
-
-    for (int i = upper; i < n; i++)
-      viable[i] = false;
+    for (int i = f; i < d; i++) // TODO: read from upper + *clue to influence
+      viable[i] = false;        // regardless of viableness. (or edit viable
+                                // bounds to better scan)
+    for (int i = lower; i < upper; i++)
+      viable[i] = true;
 
     // clue must be in [min,max)
     int min = d - offset;
     int max = *clue + f;
+    printf("offset = %d\n", offset);
 
     if (f < 0) // Insanity checking
       break;
 
     //printf("Lower: %d, Upper: %d, min: %d, max: %d, ", lower, upper, min, max);
     // printing row
-    print_row(A + f, f, 0, d, clue_ptr, clues);
+    print_row(A, f, d, clue_ptr, clues); // PRINT!! TODO
 
 
     bool repeat;
     // 2. itterativly shrink said barriars (all of the following will need to
     //    be updated)
     // TODO: vigerously check that this works
+    //printf("optimizing search locations:\n");
     do {
+      //printf("Upper = %d, Lower = %d\n", upper, lower);
+      printf("Viable: ");
+      for (int i = 0; i < d; i++) {
+        if (viable[i]) printf("X");
+        else printf("N");
+      }
+      printf("\n");
       repeat = false;
       // b. check for empty cells from [lower, lower + *clue)
       for (int i = lower + *clue - 1; i >= lower; i--) {
+        if (!viable[i]) continue;
         if (!((A[i]->data) || (A[i]->enable))) { // empty cell
+          //printf("loop 1: found empty cell @ index %d\n", i);
+          viable[i] = false;
           repeat = true;
           max -= i - lower + 1;
           lower = i + 1;
@@ -167,8 +174,11 @@ static int solve_row(cell_t **A, int n, unsigned short int *clue_ptr,
       }
 
       // c. check for empty cells from (upper - *clue, upper]
-      for (int i = upper - *clue; i < upper; i++) {
-        if (!((A[i]->data) || (A[i]->enable))) { // empty cell
+      for (int i = ((upper - *clue > 0) ? (upper - *clue): 0); i < upper; i++) {
+        if (!viable[i]) continue;
+        if (!((A[i]->data) || (A[i]->enable))) { // empty cell TODO: FIX ERRORS
+          //printf("loop 2: found empty cell @ index %d\n", i);
+          viable[i] = false;
           repeat = true;
           min -= upper - i + 1;
           upper = i - 1;
@@ -183,20 +193,28 @@ static int solve_row(cell_t **A, int n, unsigned short int *clue_ptr,
       // need base case.
       // need to search the surrouning cells for additional full cells
       for (int i = lower + *clue; i >= lower; i--) {
+        if (!viable[i]) continue;
         if ((A[i]->data) && (!(A[i]->enable))) {
+          //printf("loop 3: found full cell @ index %d\n", i);
+          viable[i] = false;
           repeat = true;
           min = i;
         }
       }
       for (int i = lower; (i <= lower + *clue) && (i < d); i++) {
         //printf("i = %d, lower = %d\n", i, lower);
+        if (!viable[i]) continue;
         if ((A[i]->data) && (!(A[i]->enable))) {
+          //printf("loop 4: found full cell @  index %d\n", i);
+          viable[i] = false;
           repeat = true;
           max = i;
           upper = (upper < i + *clue) ? upper : i + *clue;
         }
       }
     } while (repeat);
+
+    printf("u/l: %d-%d, m/m: %d-%d\n", upper, lower, min, max);
 
     //be careful of this part, could probs be error part
     //if last clue, just searches everywhere... wait
@@ -222,7 +240,11 @@ static int solve_row(cell_t **A, int n, unsigned short int *clue_ptr,
       empty_cells += empty_cell(A, min - 1, d);
       empty_cells += empty_cell(A, max, d);
     }
-    printf("min: %d, max: %d\n", min, max);
+
+    // emptying out before
+    if ((clues == 1) && (max - min == *clue_ptr))
+      for (int i = f; i < min; i++)
+        empty_cell(A, i, d);
 
     if (f > 0) {// cuts off any beyond the first clue
       f += *clue + 1;
@@ -236,8 +258,6 @@ static int solve_row(cell_t **A, int n, unsigned short int *clue_ptr,
     for (int i = f; i < lower; i++)
       empty_cells += empty_cell(A, i, d);
 
-    printf("A[9]: (%d, %d)\n", A[9]->data, A[9]->enable);
-
     /*
      * I have no idea what the hell this line does. It shouldn't really be here
     if (clues - clue_num == 1)
@@ -245,16 +265,12 @@ static int solve_row(cell_t **A, int n, unsigned short int *clue_ptr,
         empty_cells += empty_cell(A, i, d);
     */
 
-    printf("A[9]: (%d, %d)\n", A[9]->data, A[9]->enable);
-
     // step 5
     clue_num++;
     if (max - min == *clue)
-      f = max + 2;
+      f = max + 1;
     else
       f += *clue + 1;
-
-    printf("A[9]: (%d, %d)\n", A[9]->data, A[9]->enable);
   }
 
   // if all clues filled, make all cells empty
@@ -276,7 +292,7 @@ int solver_loop(int width, int height, cell_t *array[height][width],
   for (int i = 0; i < height; i++) {
     curr_sum += solve_row(array[i], width, blocks[0][i].arr,
                           blocks[0][i].blocks);
-    print_row(array[i], 0, 0, width, blocks[0][i].arr, blocks[0][i].blocks);
+    print_row(array[i], 0, width, blocks[0][i].arr, blocks[0][i].blocks);
     printf("\n");
   }
 
@@ -286,7 +302,7 @@ int solver_loop(int width, int height, cell_t *array[height][width],
       prob_arr[j] = array[j][i];
     curr_sum += solve_row(prob_arr, height, blocks[1][i].arr,
                           blocks[1][i].blocks);
-    print_row(prob_arr, 0, 0, height, blocks[1][i].arr, blocks[1][i].blocks);
+    print_row(prob_arr, 0, height, blocks[1][i].arr, blocks[1][i].blocks);
     printf("\n");
   }
 

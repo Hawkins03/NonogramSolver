@@ -1,5 +1,5 @@
 CC = gcc
-CFLAGS = -O3 -Wall -Werror -g
+CFLAGS = -Wall -Werror -g
 DEPS = io.h solver.h
 
 %.o: %.c $(DEPS)
