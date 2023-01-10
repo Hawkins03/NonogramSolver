@@ -91,22 +91,22 @@ static int solve_row(cell_t **A, int n, unsigned short int *clue_ptr,
   print_row(A, 0, n, clue_ptr, clues); // TODO: massive loop here
 
   // check nothing is blocking last clue
-  for (int i = d - *(clue_ptr + clues - 1); i < d; i++) {
-    if (!((A[i]->data) || (A[i]->enable))) { // not X, not write enabled
-      for (int j = i; j < d; j++)
-        empty_cell(A, j, d);
-      return solve_row(A, n, clue_ptr, clues);
-    }
-  }
+  //for (int i = d - *(clue_ptr + clues - 1); i < d; i++) {
+  //  if (!((A[i]->data) || (A[i]->enable))) { // not X, not write enabled
+  //    for (int j = i; j < d; j++)
+  //      empty_cell(A, j, d);
+  //    return solve_row(A, i, clue_ptr, clues);
+  //  }
+  //}
 
   // check nothing is blocking first clue
-  for (int i = f + *(clue_ptr + clues - 1); ((i >= f) && (i < d)); i--) {
-    if (!((A[i]->data) || (A[i]->enable))) { // error?
-      for (int j = i; j > d; j--)
-        empty_cell(A, j, d);
-      return solve_row(A + i + 1, d - i - 1, clue_ptr, clues);
-    }
-  }
+  //for (int i = f + *(clue_ptr + clues - 1); ((i >= f) && (i < d)); i--) {
+  //  if (!((A[i]->data) || (A[i]->enable))) { // error?
+  //    for (int j = i; j > d; j--)
+  //      empty_cell(A, j, d);
+  //    return solve_row(A + i + 1, d - i - 1, clue_ptr, clues);
+  //  }
+  //}
 
   while (clue_num < clues) {
     bool searched[n]; // holds viable search locations (if full or empty, not viable.)
@@ -130,9 +130,10 @@ static int solve_row(cell_t **A, int n, unsigned short int *clue_ptr,
     int alt_upper = (f + 2 * *clue + 1 < d)? (f + 2 * *clue + 1) : (d - 1);
     upper = (upper > alt_upper) ? upper : alt_upper;
     int lower = f;
+    
 
-    for (int i = f; i < d; i++) // TODO: read from upper + *clue to influence
-      searched[i] = true;        // regardless of viableness. (or edit viable
+    for (int i = 0; i < d; i++) // TODO: read from upper + *clue to influence
+      searched[i] = true;       // regardless of viableness. (or edit viable
                                 // bounds to better scan)
     for (int i = lower; i < upper; i++)
       searched[i] = false;
@@ -140,7 +141,7 @@ static int solve_row(cell_t **A, int n, unsigned short int *clue_ptr,
     // clue must be in [min,max)
     int min = d - offset;
     int max = *clue + f;
-    printf("offset = %d\n", offset);
+    printf("offset = %d, u/l = %d/%d\n", offset, upper, lower);
 
     if (f < 0) // Insanity checking
       break;
@@ -197,8 +198,12 @@ static int solve_row(cell_t **A, int n, unsigned short int *clue_ptr,
       // need to search the surrouning cells for additional full cells
       for (int i = lower + *clue; i >= lower; i--) {
         if (searched[i]) continue;
-        if ((A[i]->data) && (!(A[i]->enable))) {
+        if ((A[i]->data) && (!(A[i]->enable))) { //TODO: fix this. might need upper loop looking for full cells.
           //printf("loop 3: found full cell @ index %d\n", i);
+          int ittr = i;
+          while ((ittr < d - 1) && (A[ittr + 1]->data && (!A[i]->enable))) {
+            ittr++;
+          }
           searched[i] = true;
           repeat = true;
           min = i;
