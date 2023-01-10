@@ -79,6 +79,8 @@ static int empty_cell(cell_t **A, int i, int d) {
  */
 static int solve_row(cell_t **A, int n, unsigned short int *clue_ptr,
                      int clues) {
+  if (n == 0) return 0;
+
   int clue_num = 0;
   int empty_cells = 0;
   int full_cells = 0;
@@ -93,7 +95,7 @@ static int solve_row(cell_t **A, int n, unsigned short int *clue_ptr,
     if (!((A[i]->data) || (A[i]->enable))) { // not X, not write enabled
       for (int j = i; j < d; j++)
         empty_cell(A, j, d);
-      return solve_row(A, i, clue_ptr, clues);
+      return solve_row(A, n, clue_ptr, clues);
     }
   }
 
@@ -124,7 +126,9 @@ static int solve_row(cell_t **A, int n, unsigned short int *clue_ptr,
     //printf("Offset: %d\n", offset);
 
     // marking upper and lower bounds for the search
-    int upper = d - offset; // TODO: edit to give better context.
+    int upper = d - offset;
+    int alt_upper = (f + 2 * *clue + 1 < d)? (f + 2 * *clue + 1) : (d - 1);
+    upper = (upper > alt_upper) ? upper : alt_upper;
     int lower = f;
 
     for (int i = f; i < d; i++) // TODO: read from upper + *clue to influence
@@ -152,9 +156,9 @@ static int solve_row(cell_t **A, int n, unsigned short int *clue_ptr,
     //printf("optimizing search locations:\n");
     do {
       //printf("Upper = %d, Lower = %d\n", upper, lower);
-      printf("Viable: ");
+      printf("Searched: ");
       for (int i = 0; i < d; i++) {
-        if (searched[i]) printf("X");
+        if (searched[i]) printf("Y");
         else printf("N");
       }
       printf("\n");
@@ -179,8 +183,8 @@ static int solve_row(cell_t **A, int n, unsigned short int *clue_ptr,
           //printf("loop 2: found empty cell @ index %d\n", i);
           searched[i] = true;
           repeat = true;
-          min -= upper - i + 1;
-          upper = i - 1;
+          min -= upper - i;
+          upper = i;
           break;
         }
       }
