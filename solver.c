@@ -107,7 +107,7 @@ static int solve_row(cell_t **A, int n, unsigned short int *clue_ptr,
   }
 
   while (clue_num < clues) {
-    bool viable[n]; // holds viable search locations (if full or empty, not viable.)
+    bool searched[n]; // holds viable search locations (if full or empty, not viable.)
 
     unsigned short int *clue = clue_ptr + clue_num;
     //printf("clue: %d ", *clue);
@@ -128,10 +128,10 @@ static int solve_row(cell_t **A, int n, unsigned short int *clue_ptr,
     int lower = f;
 
     for (int i = f; i < d; i++) // TODO: read from upper + *clue to influence
-      viable[i] = false;        // regardless of viableness. (or edit viable
+      searched[i] = true;        // regardless of viableness. (or edit viable
                                 // bounds to better scan)
     for (int i = lower; i < upper; i++)
-      viable[i] = true;
+      searched[i] = false;
 
     // clue must be in [min,max)
     int min = d - offset;
@@ -143,8 +143,7 @@ static int solve_row(cell_t **A, int n, unsigned short int *clue_ptr,
 
     //printf("Lower: %d, Upper: %d, min: %d, max: %d, ", lower, upper, min, max);
     // printing row
-    print_row(A, f, d, clue_ptr, clues); // PRINT!! TODO
-
+    print_row(A, f, d, clue_ptr, clues);
 
     bool repeat;
     // 2. itterativly shrink said barriars (all of the following will need to
@@ -155,17 +154,17 @@ static int solve_row(cell_t **A, int n, unsigned short int *clue_ptr,
       //printf("Upper = %d, Lower = %d\n", upper, lower);
       printf("Viable: ");
       for (int i = 0; i < d; i++) {
-        if (viable[i]) printf("X");
+        if (searched[i]) printf("X");
         else printf("N");
       }
       printf("\n");
       repeat = false;
       // b. check for empty cells from [lower, lower + *clue)
       for (int i = lower + *clue - 1; i >= lower; i--) {
-        if (!viable[i]) continue;
+        if (searched[i]) continue;
         if (!((A[i]->data) || (A[i]->enable))) { // empty cell
           //printf("loop 1: found empty cell @ index %d\n", i);
-          viable[i] = false;
+          searched[i] = true;
           repeat = true;
           max -= i - lower + 1;
           lower = i + 1;
@@ -175,10 +174,10 @@ static int solve_row(cell_t **A, int n, unsigned short int *clue_ptr,
 
       // c. check for empty cells from (upper - *clue, upper]
       for (int i = ((upper - *clue > 0) ? (upper - *clue): 0); i < upper; i++) {
-        if (!viable[i]) continue;
-        if (!((A[i]->data) || (A[i]->enable))) { // empty cell TODO: FIX ERRORS
+        if (searched[i]) continue;
+        if (!((A[i]->data) || (A[i]->enable))) { // empty cell
           //printf("loop 2: found empty cell @ index %d\n", i);
-          viable[i] = false;
+          searched[i] = true;
           repeat = true;
           min -= upper - i + 1;
           upper = i - 1;
@@ -193,20 +192,20 @@ static int solve_row(cell_t **A, int n, unsigned short int *clue_ptr,
       // need base case.
       // need to search the surrouning cells for additional full cells
       for (int i = lower + *clue; i >= lower; i--) {
-        if (!viable[i]) continue;
+        if (searched[i]) continue;
         if ((A[i]->data) && (!(A[i]->enable))) {
           //printf("loop 3: found full cell @ index %d\n", i);
-          viable[i] = false;
+          searched[i] = true;
           repeat = true;
           min = i;
         }
       }
       for (int i = lower; (i <= lower + *clue) && (i < d); i++) {
         //printf("i = %d, lower = %d\n", i, lower);
-        if (!viable[i]) continue;
+        if (searched[i]) continue;
         if ((A[i]->data) && (!(A[i]->enable))) {
           //printf("loop 4: found full cell @  index %d\n", i);
-          viable[i] = false;
+          searched[i] = true;
           repeat = true;
           max = i;
           upper = (upper < i + *clue) ? upper : i + *clue;
@@ -253,8 +252,8 @@ static int solve_row(cell_t **A, int n, unsigned short int *clue_ptr,
     }
 
     // could just go positive if min > max (which we don't want)
-    // TODO: fix this MASSIVE bug that seems to be here.
-
+    // TODO: fix this MASSIVE bug that seems to be here. (I'm not sure if it's
+    // still there btw)
     for (int i = f; i < lower; i++)
       empty_cells += empty_cell(A, i, d);
 
