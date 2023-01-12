@@ -58,6 +58,8 @@ static int empty_cell(cell_t **A, int i, int d) {
  *       (shrink search area)
  *      c. if there's an empty cell in the range [min, min + *clue) or
  *       (max - *clue, max] shrink search area
+ * TODO: add in check that if max = d or max + 1 is empty then min = max - *clue
+ *       and same for min (but in reverse)
  *    3. fill [min, max]
  *      a. add endcaps if max-min = *clue
  *    4. if # clues = 1, empty all unreachable spaces. (then exit solve_row)
@@ -76,6 +78,8 @@ static int empty_cell(cell_t **A, int i, int d) {
  * level. This could be used to remove non-viable locations and could be used
  * to make things much easier.
  *
+ * TODO: find some actual test cases to test against insted of running it again
+ * and again.
  */
 static int solve_row(cell_t **A, int n, unsigned short int *clue_ptr,
                      int clues) {
@@ -89,24 +93,6 @@ static int solve_row(cell_t **A, int n, unsigned short int *clue_ptr,
   int d = n;
 
   print_row(A, 0, n, clue_ptr, clues); // TODO: massive loop here
-
-  // check nothing is blocking last clue
-  //for (int i = d - *(clue_ptr + clues - 1); i < d; i++) {
-  //  if (!((A[i]->data) || (A[i]->enable))) { // not X, not write enabled
-  //    for (int j = i; j < d; j++)
-  //      empty_cell(A, j, d);
-  //    return solve_row(A, i, clue_ptr, clues);
-  //  }
-  //}
-
-  // check nothing is blocking first clue
-  //for (int i = f + *(clue_ptr + clues - 1); ((i >= f) && (i < d)); i--) {
-  //  if (!((A[i]->data) || (A[i]->enable))) { // error?
-  //    for (int j = i; j > d; j--)
-  //      empty_cell(A, j, d);
-  //    return solve_row(A + i + 1, d - i - 1, clue_ptr, clues);
-  //  }
-  //}
 
   while (clue_num < clues) {
     bool searched[n]; // holds viable search locations (if full or empty, not viable.)
