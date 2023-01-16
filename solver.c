@@ -81,21 +81,20 @@ static int empty_cell(cell_t **A, int i, int d) {
  * TODO: find some actual test cases to test against insted of running it again
  * and again.
  */
-static int solve_row(cell_t **A, int n, unsigned short int *clue_ptr,
+static int solve_row(cell_t **A, int d, unsigned short int *clue_ptr,
                      int clues) {
-  if (n == 0) return 0;
+  if (d == 0) return 0;
 
   int clue_num = 0;
   int empty_cells = 0;
   int full_cells = 0;
 
   int f = 0;
-  int d = n;
 
-  print_row(A, 0, n, clue_ptr, clues); // TODO: massive loop here
+  print_row(A, 0, d, clue_ptr, clues);
 
   while (clue_num < clues) {
-    bool searched[n]; // holds viable search locations (if full or empty, not viable.)
+    bool searched[d]; // holds viable search locations (if full or empty, not viable.)
 
     unsigned short int *clue = clue_ptr + clue_num;
     //printf("clue: %d ", *clue);
@@ -112,11 +111,11 @@ static int solve_row(cell_t **A, int n, unsigned short int *clue_ptr,
     //printf("Offset: %d\n", offset);
 
     // marking upper and lower bounds for the search
+    // TODO: finish
     int upper = d - offset;
-    int alt_upper = (f + 2 * *clue + 1 < d)? (f + 2 * *clue + 1) : (d - 1);
+    int alt_upper = (f + 2 * *clue + 1 < d)? (f + 2 * *clue + 1) : (d);
     upper = (upper > alt_upper) ? upper : alt_upper;
     int lower = f;
-    
 
     for (int i = 0; i < d; i++) // TODO: read from upper + *clue to influence
       searched[i] = true;       // regardless of viableness. (or edit viable
@@ -150,10 +149,12 @@ static int solve_row(cell_t **A, int n, unsigned short int *clue_ptr,
       }
       printf("\n");
       repeat = false;
+
       // b. check for empty cells from [lower, lower + *clue)
-      for (int i = lower + *clue - 1; i >= lower; i--) {
+      for (int i = ((lower + *clue < d) ? lower + *clue : d); i >= lower; i--) {
         if (searched[i]) continue;
         if (!((A[i]->data) || (A[i]->enable))) { // empty cell
+          //TODO: make function to check full / empty cells to prevent SEGV
           //printf("loop 1: found empty cell @ index %d\n", i);
           searched[i] = true;
           repeat = true;
@@ -179,10 +180,11 @@ static int solve_row(cell_t **A, int n, unsigned short int *clue_ptr,
       // last bc it trumps steps b & c, reminder that loop over same thing
       // a. check for full cells from [f, f + *clue]
       //
-      // inf loop: --???XXX|
+      // TODO: fix. It's not detecting / finalizing stuffs.
       // need base case.
       // need to search the surrouning cells for additional full cells
-      for (int i = lower + *clue; i >= lower; i--) {
+      for (int i = (lower + *clue < d) ? (lower + *clue) : lower - 1;
+           i >= lower; i--) {
         if (searched[i]) continue;
         if ((A[i]->data) && (!(A[i]->enable))) { //TODO: fix this. might need upper loop looking for full cells.
           //printf("loop 3: found full cell @ index %d\n", i);
@@ -213,6 +215,7 @@ static int solve_row(cell_t **A, int n, unsigned short int *clue_ptr,
     //be careful of this part, could probs be error part
     //if last clue, just searches everywhere... wait
     //TODO: double check that this has the right cutoffs I don't trust it
+
     if (clues - clue_num == 1) {
       for (int i = f + *clue; i < d; i++) {
         if (A[i]->enable) continue;
@@ -222,6 +225,23 @@ static int solve_row(cell_t **A, int n, unsigned short int *clue_ptr,
         if (A[i]->enable) continue;
         if (A[i]->data) min = ((min < i) ? min : i);
       }
+    }
+
+    printf("u/l: %d-%d, m/m: %d-%d\n", upper, lower, min, max);
+
+    // TODO: if max == upper || max + 1 == empty
+    //       if min == lower || min - 1 == empty
+
+    if (max >= upper - 1) {
+      min = max - *clue;
+    } else if (!((A[max + 1]->data) || (A[max + 1]->enable))) {
+      min = max - *clue;
+    }
+
+    if (min <= lower) {
+      max = min + *clue;
+    } else if (!((A[min - 1]->data) || (A[min - 1]->enable))) {
+      max = min + *clue;
     }
 
     // step 3.
