@@ -113,7 +113,7 @@ static int solve_row(cell_t **A, int d, unsigned short int *clue_ptr,
     // marking upper and lower bounds for the search
     // TODO: finish
     int upper = d - offset;
-    int alt_upper = (f + 2 * *clue + 1 < d)? (f + 2 * *clue + 1) : (d);
+    int alt_upper = (f + 2 * *clue + 1 < d)? (f + 2 * *clue + 1) : (f);
     upper = (upper > alt_upper) ? upper : alt_upper;
     int lower = f;
 
@@ -232,17 +232,16 @@ static int solve_row(cell_t **A, int d, unsigned short int *clue_ptr,
     // TODO: if max == upper || max + 1 == empty
     //       if min == lower || min - 1 == empty
 
-    if (max >= upper - 1) {
+    if (max >= d)
       min = max - *clue;
-    } else if (!((A[max + 1]->data) || (A[max + 1]->enable))) {
-      min = max - *clue;
-    }
+    else if (max < upper - 1)
+      if (!((A[max + 1]->data) || (A[max + 1]->enable))) min = max - *clue;
 
-    if (min <= lower) {
+    if (min <= f)
       max = min + *clue;
-    } else if (!((A[min - 1]->data) || (A[min - 1]->enable))) {
-      max = min + *clue;
-    }
+    else if (min >= 1)
+      if (!((A[min - 1]->data) || (A[min - 1]->enable)))
+        max = min + *clue;
 
     // step 3.
     //printf("%hu: %d->%d\n", *clue, min, max);
